@@ -1,2 +1,2 @@
 # Personal_Project_0
-Mantenimiento de Informacion personal en entortno WEB
+Repositorio web con información personal de interes accesible desde cualquier lubar 
