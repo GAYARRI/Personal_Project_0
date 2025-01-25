@@ -4,43 +4,133 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registros</title>
+    <style>
+        .container {
+            display: flex;
+            justify-content: space-between;
+        }
+        .table-section {
+            width: 55%;
+        }
+        .image-section {
+            width: 40%;
+            text-align: center;
+            border: 2px dashed #aaa; /* Borde inicial */
+            padding: 20px;
+            position: relative;
+        }
+        .image-section img {
+            width: 100%;
+            height: auto;
+            border: 1px solid #000;
+            display: none; /* Oculto inicialmente */
+        }
+        @keyframes parpadeo {
+            0% { opacity: 1; }
+            50% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+        .puntos span {
+            animation: parpadeo 1.5s infinite;
+        }
+        .mensaje {
+            display: none; /* Oculto inicialmente */
+            font-size: 16px;
+            margin-top: 10px;
+            color: #555;
+        }
+        .spinner {
+            display: none; /* Oculto inicialmente */
+            margin: 20px auto;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .image-section.generando {
+            border: 2px solid #3498db; /* Borde resaltado durante la generación */
+            background-color: #f0f8ff; /* Fondo claro durante la espera */
+        }
+    </style>
+    <script>
+        function mostrarCargando() {
+            // Mostrar mensaje y spinner
+            document.getElementById('mensaje-espera').style.display = 'block';
+            document.getElementById('spinner').style.display = 'block';
+            document.getElementById('mensaje-espera').innerHTML = 'Generando imagen<span class="puntos">...</span>';
+            // Ocultar la imagen generada previa
+            document.getElementById('imagen-generada').style.display = 'none';
+        }
+    </script>
 </head>
 <body>
     <h1>Lista de Registros</h1>
-    <form method="POST" action="/">
-        <input type="text" name="nombre" placeholder="Nombre" required>
-        <input type="text" name="valor" placeholder="Valor" required>
-        <button type="submit">Añadir Registro</button>
-    </form>
-    <table border="1">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Nombre</th>
-                <th>Valor</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% if registros %}
-                {% for registro in registros %}
-                <tr>
-                    <td>{{ registro.id }}</td>
-                    <td>{{ registro.nombre }}</td>
-                    <td>{{ registro.valor }}</td>
-                    <td>
-                        <form method="POST" action="{{ url_for('main.borrar', id=registro.id) }}" style="display:inline;">
-                            <button type="submit">Borrar</button>
-                        </form>
-                    </td>
-                </tr>
-                {% endfor %}
-            {% else %}
-                <tr>
-                    <td colspan="4">No hay registros disponibles</td>
-                </tr>
-            {% endif %}
-        </tbody>
-    </table>
+    <div class="container">
+        <!-- Tabla de registros -->
+        <div class="table-section">
+            <form method="POST" action="/">
+                <input type="text" name="nombre" placeholder="Nombre" required>
+                <input type="text" name="valor" placeholder="Valor" required>
+                <button type="submit">Añadir Registro</button>
+            </form>
+            <table border="1">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre</th>
+                        <th>Valor</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if registros %}
+                        {% for registro in registros %}
+                        <tr>
+                            <td>{{ registro.id }}</td>
+                            <td>{{ registro.nombre }}</td>
+                            <td>{{ registro.valor }}</td>
+                            <td>
+                                <form method="POST" action="{{ url_for('main.borrar', id=registro.id) }}" style="display:inline;">
+                                    <button type="submit">Borrar</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="4">No hay registros disponibles</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Sección de generación de imágenes -->
+        <div class="image-section">
+            <form method="POST" action="/generate-image" onsubmit="mostrarCargando()">
+                <input type="text" name="prompt" placeholder="Describe la imagen" required>
+                <button type="submit">Crear Imagen</button>
+            </form>
+            <div>
+                <!-- Spinner de carga -->
+                <div id="spinner" class="spinner"></div>
+                <!-- Mensaje de espera -->
+                <p id="mensaje-espera" class="mensaje">Aquí aparecerá la imagen generada.</p>
+                <!-- Imagen generada -->
+                {% if imagen_url %}
+                    <img id="imagen-generada" src="{{ imagen_url }}" alt="Imagen generada por DALL-E" style="display: block;">
+                {% else %}
+                    <img id="imagen-generada" src="" alt="Aquí aparecerá la imagen generada.">
+                {% endif %}
+            </div>
+        </div>
+    </div>
 </body>
 </html>
+
