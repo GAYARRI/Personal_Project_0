@@ -1,4 +1,5 @@
-from flask import Flask
+from flask import Flask,request
+
 from app_db import db
 from app.models import Registro
 
