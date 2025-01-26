@@ -4,32 +4,30 @@
 {% block title %}Editar Registro{% endblock %}
 
 {% block header %}
-<h1>Editar Registro</h1>
+<h2>Editar Registro</h2>
 {% endblock %}
 
 {% block content %}
-<!-- Mensajes de feedback -->
-{% with messages = get_flashed_messages(with_categories=True) %}
-{% if messages %}
-    <ul>
-    {% for category, message in messages %}
-        <li class="{{ category }}">{{ message }}</li>
-    {% endfor %}
-    </ul>
-{% endif %}
-{% endwith %}
-
-<!-- Formulario de edición -->
-<form method="POST" action="{{ url_for('main.editar', id=registro.id) }}" class="form-inline my-4">
-    <div class="mb-3">
-        <label for="nombre" class="form-label">Nombre:</label>
-        <input type="text" class="form-control" id="nombre" name="nombre" value="{{ registro.nombre }}" required>
-    </div>
-    <div class="mb-3">
-        <label for="valor" class="form-label">Valor:</label>
-        <input type="text" class="form-control" id="valor" name="valor" value="{{ registro.valor }}" required>
-    </div>
-    <button type="submit" class="btn btn-success">Guardar Cambios</button>
-</form>
-<a href="{{ url_for('main.home') }}" class="btn btn-secondary">Volver</a>
+<div>
+    <form method="POST" action="{{ url_for('main.editar', id=registro.id) }}">
+        <label for="nombre">Nombre:</label>
+        <input type="text" id="nombre" name="nombre" value="{{ registro.nombre }}" required>
+        
+        {% if registro.precio is not none %}
+        <!-- Solo para productos -->
+        <label for="precio">Precio:</label>
+        <input type="number" id="precio" name="precio" value="{{ registro.precio }}" step="0.01" required>
+        <label for="categoria_id">Categoría:</label>
+        <select id="categoria_id" name="categoria_id" required>
+            {% for categoria in categorias %}
+            <option value="{{ categoria.id }}" {% if categoria.id == registro.categoria_id %}selected{% endif %}>
+                {{ categoria.nombre }}
+            </option>
+            {% endfor %}
+        </select>
+        {% endif %}
+        
+        <button type="submit">Guardar Cambios</button>
+    </form>
+</div>
 {% endblock %}

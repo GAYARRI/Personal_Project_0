@@ -1,37 +1,37 @@
 {% extends "base.html" %}
 
-{% block title %}Lista de Registros{% endblock %}
+{% block title %}Demo de Funcionalidades Premium{% endblock %}
 
 {% block header %}
-<h1>Lista de Registros</h1>
+<h1>Demo de Funcionalidades Premium</h1>
 {% endblock %}
 
 {% block content %}
-<div class="container" style="display: flex; justify-content: space-between;">
-    <!-- Formulario y tabla de registros -->
-    <div class="table-section" style="width: 60%;">
-        <form method="POST" action="/">
-            <input type="text" name="nombre" placeholder="Nombre" required>
-            <input type="text" name="valor" placeholder="Valor" required>
-            <button type="submit">Añadir Registro</button>
-        </form>
+<div>
+    <h2>Interacción con BBDD Local</h2>
+    <ul>
+        <li><a href="{{ url_for('main.categorias') }}">Gestionar Categorías</a></li>
+        <li><a href="{{ url_for('main.productos') }}">Gestionar Productos</a></li>
+        <li><a href="{{ url_for('main.resumen') }}">Ver Resumen</a></li>
+    </ul>
+</div>
 
-        <!-- Incluir la tabla de registros -->
-        {% include "registros.html" %}
+<div>
+    <h2>Generación de Imágenes</h2>
+    <form method="POST" action="{{ url_for('main.generate_image') }}" onsubmit="mostrarCargando()">
+        <label for="prompt">Introduce el prompt para la imagen:</label>
+        <input type="text" id="prompt" name="prompt" required>
+        <button type="submit">Generar Imagen</button>
+    </form>
+    <div id="spinner" style="display: none; text-align: center;">
+        <p>Generando imagen...</p>
+        <div class="spinner"></div>
     </div>
-
-    <!-- Sección del prompt -->
-    <div class="prompt-section" style="width: 35%; border: 1px solid #ddd; padding: 20px; border-radius: 5px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); background-color: #f9f9f9;">
-        <h2>Generar Imagen</h2>
-        <form method="POST" action="/generate-image">
-            <input type="text" name="prompt" placeholder="Describe la imagen" required>
-            <button type="submit">Crear Imagen</button>
-        </form>
-        <div style="margin-top: 20px;">
-            {% if imagen_url %}
-            <img src="{{ imagen_url }}" alt="Imagen generada por DALL-E" style="width: 100%; height: auto; border: 1px solid #ccc;">
-            {% endif %}
-        </div>
+    {% if imagen_url %}
+    <div>
+        <h3>Imagen generada:</h3>
+        <img src="{{ imagen_url }}" alt="Imagen generada por DALL-E">
     </div>
+    {% endif %}
 </div>
 {% endblock %}

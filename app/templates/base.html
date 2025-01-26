@@ -3,15 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Mi Aplicación{% endblock %}</title>
+    <title>{% block title %}Gestión de Registros{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
 <body>
     <header>
-        <h1>{% block header %}Bienvenido{% endblock %}</h1>
+        <h1>{% block header %}Gestión de Tablas{% endblock %}</h1>
     </header>
     <main>
+        {% with messages = get_flashed_messages(with_categories=True) %}
+        {% if messages %}
+            <ul>
+            {% for category, message in messages %}
+                <li class="{{ category }}">{{ message }}</li>
+            {% endfor %}
+            </ul>
+        {% endif %}
+        {% endwith %}
         {% block content %}{% endblock %}
     </main>
 </body>
 </html>
+
+<script>
+    function mostrarCargando() {
+        // Mostrar spinner mientras se genera la imagen
+        const spinner = document.getElementById('spinner');
+        spinner.style.display = 'block';
+    }
+</script>
+

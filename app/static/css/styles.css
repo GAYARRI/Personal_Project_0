@@ -1,22 +1,63 @@
+/* General */
 body {
-    font-family: Arial, sans-serif;
-    background-color: #f9f9f9;
+    font-family: 'Roboto', sans-serif;
+    background-color: #f4f4f9;
     color: #333;
-    margin: 20px;
+    line-height: 1.6;
+    margin: 0;
+    padding: 0;
 }
 
+h1, h2, h3 {
+    font-family: 'Lobster', cursive;
+    color: #2c3e50;
+}
+
+/* Botones */
+button {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+button:hover {
+    background-color: #2980b9;
+}
+
+/* Tablas */
 table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 20px;
+    margin: 20px 0;
 }
 
-th, td {
-    padding: 10px;
+table th, table td {
+    padding: 12px;
+    border: 1px solid #ddd;
     text-align: left;
-    border: 1px solid #ccc;
 }
 
-th {
-    background-color: #f2f2f2;
+table th {
+    background-color: #34495e;
+    color: white;
+}
+
+/* Spinner */
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }

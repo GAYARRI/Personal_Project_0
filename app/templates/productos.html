@@ -1,0 +1,48 @@
+
+{% extends "base.html" %}
+
+{% block title %}Productos{% endblock %}
+
+{% block content %}
+<h1>Gestión de Productos</h1>
+<form method="POST" action="{{ url_for('main.productos') }}">
+    <input type="text" name="nombre" placeholder="Nombre del producto" required>
+    <input type="text" name="precio" placeholder="Precio" required>
+    <select name="categoria_id" required>
+        {% for categoria in categorias %}
+        <option value="{{ categoria.id }}">{{ categoria.nombre }}</option>
+        {% endfor %}
+    </select>
+    <button type="submit">Añadir Producto</button>
+</form>
+
+<table border="1">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Precio</th>
+            <th>Categoría</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for producto in productos %}
+        <tr>
+            <td>{{ producto.id }}</td>
+            <td>{{ producto.nombre }}</td>
+            <td>{{ producto.precio }}</td>
+            <td>{{ producto.categoria.nombre }}</td>
+            <td>
+                <form method="POST" action="{{ url_for('main.borrar_producto', id=producto.id) }}">
+                    <button type="submit">Borrar</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<!-- Enlace para regresar a la página principal -->
+<a href="{{ url_for('main.home') }}">Volver al inicio</a>
+{% endblock %}

@@ -1,48 +1,30 @@
-from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-import os
+from app_db import db
+from app import create_app
+from app.models import Categoria, Producto
 
-# Configuración de la aplicación Flask
-app = Flask(__name__)
-
-# Ruta a la base de datos
-db_path = os.path.join('C:/Users/gayar/Personal_Project/RepoP0', 'app.db')
-app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-# Inicializar SQLAlchemy
-db = SQLAlchemy(app)
-
-# Modelo para la tabla `registro`
-class Registro(db.Model):
-    __tablename__ = 'registro'
-    id = db.Column(db.Integer, primary_key=True)
-    nombre = db.Column(db.String(80), nullable=False)
-    valor = db.Column(db.String(120), nullable=False)
-
-    def __repr__(self):
-        return f"<Registro {self.nombre}>"
-
-# Crear tablas y agregar registros en un contexto de aplicación
+# Crear la aplicación y establecer el contexto
+app = create_app()
 with app.app_context():
-    # Crear las tablas si no existen
-    db.create_all()
-    print("Tabla 'registro' creada con éxito")
+    db.create_all()  # Crear tablas si no existen
 
-    # Insertar registros
-    try:
-        registro1 = Registro(nombre="Ejemplo Nombre 1", valor="100")
-        registro2 = Registro(nombre="Ejemplo Nombre 2", valor="200")
-        db.session.add_all([registro1, registro2])
+    # Insertar datos de ejemplo
+    if not Categoria.query.first():  # Verifica si la tabla de categorías está vacía
+        categorias_ejemplo = [
+            Categoria(nombre="Electrónica"),
+            Categoria(nombre="Ropa"),
+            Categoria(nombre="Hogar"),
+        ]
+        db.session.add_all(categorias_ejemplo)
+        db.session.flush()  # Asegura que las categorías tengan IDs asignados
+
+        productos_ejemplo = [
+            Producto(nombre="Teléfono", precio=500.0, categoria_id=categorias_ejemplo[0].id),
+            Producto(nombre="Laptop", precio=1200.0, categoria_id=categorias_ejemplo[0].id),
+            Producto(nombre="Camiseta", precio=20.0, categoria_id=categorias_ejemplo[1].id),
+            Producto(nombre="Sofá", precio=800.0, categoria_id=categorias_ejemplo[2].id),
+        ]
+        db.session.add_all(productos_ejemplo)
         db.session.commit()
-        print("Registros añadidos correctamente:")
-        print(f"ID: {registro1.id}, Nombre: {registro1.nombre}, Valor: {registro1.valor}")
-        print(f"ID: {registro2.id}, Nombre: {registro2.nombre}, Valor: {registro2.valor}")
-    except Exception as e:
-        db.session.rollback()
-        print(f"Error al insertar los registros: {e}")
 
-
-
-
+    print("Base de datos inicializada con datos de ejemplo.")
 

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Categorías{% endblock %}
+
+{% block content %}
+<h1>Gestión de Categorías</h1>
+<form method="POST" action="{{ url_for('main.categorias') }}">
+    <input type="text" name="nombre" placeholder="Nombre de la categoría" required>
+    <button type="submit">Añadir Categoría</button>
+</form>
+
+<table border="1">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for categoria in categorias %}
+        <tr>
+            <td>{{ categoria.id }}</td>
+            <td>{{ categoria.nombre }}</td>
+            <td>
+                <form method="POST" action="{{ url_for('main.borrar_categoria', id=categoria.id) }}">
+                    <button type="submit">Borrar</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<a href="{{ url_for('main.home') }}">Volver al inicio</a>
+{% endblock %}
