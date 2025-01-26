@@ -1,46 +1,37 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registros</title>
-</head>
-<body>
-    <h1>Lista de Registros</h1>
-    <form method="POST" action="/">
-        <input type="text" name="nombre" placeholder="Nombre" required>
-        <input type="text" name="valor" placeholder="Valor" required>
-        <button type="submit">Añadir Registro</button>
-    </form>
-    <table border="1">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Nombre</th>
-                <th>Valor</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% if registros %}
-                {% for registro in registros %}
-                <tr>
-                    <td>{{ registro.id }}</td>
-                    <td>{{ registro.nombre }}</td>
-                    <td>{{ registro.valor }}</td>
-                    <td>
-                        <form method="POST" action="{{ url_for('main.borrar', id=registro.id) }}" style="display:inline;">
-                            <button type="submit">Borrar</button>
-                        </form>
-                    </td>
-                </tr>
-                {% endfor %}
-            {% else %}
-                <tr>
-                    <td colspan="4">No hay registros disponibles</td>
-                </tr>
+{% extends "base.html" %}
+
+{% block title %}Lista de Registros{% endblock %}
+
+{% block header %}
+<h1>Lista de Registros</h1>
+{% endblock %}
+
+{% block content %}
+<div class="container" style="display: flex; justify-content: space-between;">
+    <!-- Formulario y tabla de registros -->
+    <div class="table-section" style="width: 60%;">
+        <form method="POST" action="/">
+            <input type="text" name="nombre" placeholder="Nombre" required>
+            <input type="text" name="valor" placeholder="Valor" required>
+            <button type="submit">Añadir Registro</button>
+        </form>
+
+        <!-- Incluir la tabla de registros -->
+        {% include "registros.html" %}
+    </div>
+
+    <!-- Sección del prompt -->
+    <div class="prompt-section" style="width: 35%; border: 1px solid #ddd; padding: 20px; border-radius: 5px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); background-color: #f9f9f9;">
+        <h2>Generar Imagen</h2>
+        <form method="POST" action="/generate-image">
+            <input type="text" name="prompt" placeholder="Describe la imagen" required>
+            <button type="submit">Crear Imagen</button>
+        </form>
+        <div style="margin-top: 20px;">
+            {% if imagen_url %}
+            <img src="{{ imagen_url }}" alt="Imagen generada por DALL-E" style="width: 100%; height: auto; border: 1px solid #ccc;">
             {% endif %}
-        </tbody>
-    </table>
-</body>
-</html>
+        </div>
+    </div>
+</div>
+{% endblock %}

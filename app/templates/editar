@@ -1,39 +1,35 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Editar Registro</title>
-</head>
-<body>
-    <h1>Editar Registro</h1>
 
-    <!-- Mensajes de feedback -->
-    {% with messages = get_flashed_messages(with_categories=True) %}
-    {% if messages %}
-        <ul>
-        {% for category, message in messages %}
-            <li class="{{ category }}">{{ message }}</li>
-        {% endfor %}
-        </ul>
-    {% endif %}
-    {% endwith %}
+{% extends "base.html" %}
 
-    <!-- Formulario de edición -->
-    <form method="POST" action="{{ url_for('main.editar', id=registro.id) }}" class="form-inline my-4">
-        <div class="mb-3">
-            <label for="nombre" class="form-label">Nombre:</label>
-            <input type="text" class="form-control" id="nombre" name="nombre" value="{{ registro.nombre }}" required>
-        </div>
-        <div class="mb-3">
-            <label for="valor" class="form-label">Valor:</label>
-            <input type="text" class="form-control" id="valor" name="valor" value="{{ registro.valor }}" required>
-        </div>
-        <button type="submit" class="btn btn-success">Guardar Cambios</button>
-    </form>
-    <a href="{{ url_for('main.home') }}" class="btn btn-secondary">Volver</a>
-    
+{% block title %}Editar Registro{% endblock %}
 
-    <a href="{{ url_for('main.home') }}">Volver</a>
-</body>
-</html>
+{% block header %}
+<h1>Editar Registro</h1>
+{% endblock %}
+
+{% block content %}
+<!-- Mensajes de feedback -->
+{% with messages = get_flashed_messages(with_categories=True) %}
+{% if messages %}
+    <ul>
+    {% for category, message in messages %}
+        <li class="{{ category }}">{{ message }}</li>
+    {% endfor %}
+    </ul>
+{% endif %}
+{% endwith %}
+
+<!-- Formulario de edición -->
+<form method="POST" action="{{ url_for('main.editar', id=registro.id) }}" class="form-inline my-4">
+    <div class="mb-3">
+        <label for="nombre" class="form-label">Nombre:</label>
+        <input type="text" class="form-control" id="nombre" name="nombre" value="{{ registro.nombre }}" required>
+    </div>
+    <div class="mb-3">
+        <label for="valor" class="form-label">Valor:</label>
+        <input type="text" class="form-control" id="valor" name="valor" value="{{ registro.valor }}" required>
+    </div>
+    <button type="submit" class="btn btn-success">Guardar Cambios</button>
+</form>
+<a href="{{ url_for('main.home') }}" class="btn btn-secondary">Volver</a>
+{% endblock %}
