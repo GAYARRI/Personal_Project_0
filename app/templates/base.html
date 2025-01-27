@@ -4,11 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Gestión de Registros{% endblock %}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}?v=2">
 </head>
 <body>
     <header>
         <h1>{% block header %}Gestión de Tablas{% endblock %}</h1>
+        <nav>
+            <ul>
+                <li><a href="/">Inicio</a></li>
+                <li><a href="/categorias">Gestión de Categorías</a></li>
+                <li><a href="/productos">Gestión de Productos</a></li>
+                <li><a href="/tsp">Problema del Viajante</a></li>
+            </ul>
+
+        </nav>
     </header>
     <main>
         {% with messages = get_flashed_messages(with_categories=True) %}

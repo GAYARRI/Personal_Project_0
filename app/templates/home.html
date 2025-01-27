@@ -35,3 +35,13 @@
     {% endif %}
 </div>
 {% endblock %}
+
+<form method="POST" action="/calcular-distancias">
+    <label for="ciudades">Selecciona 15 ciudades:</label>
+    <select id="ciudades" name="ciudades" multiple required>
+        {% for ciudad in ciudades %}
+        <option value="{{ ciudad.id }}">{{ ciudad.nombre }}</option>
+        {% endfor %}
+    </select>
+    <button type="submit">Calcular distancias</button>
+</form>

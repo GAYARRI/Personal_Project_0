@@ -1,30 +1,39 @@
 from app_db import db
 from app import create_app
-from app.models import Categoria, Producto
+from app.models import Categoria, Producto,Ciudad
 
 # Crear la aplicación y establecer el contexto
 app = create_app()
 with app.app_context():
     db.create_all()  # Crear tablas si no existen
+    db.create_all
 
-    # Insertar datos de ejemplo
-    if not Categoria.query.first():  # Verifica si la tabla de categorías está vacía
-        categorias_ejemplo = [
-            Categoria(nombre="Electrónica"),
-            Categoria(nombre="Ropa"),
-            Categoria(nombre="Hogar"),
-        ]
-        db.session.add_all(categorias_ejemplo)
-        db.session.flush()  # Asegura que las categorías tengan IDs asignados
+with app.app_context():
+    # Insertar categorías
+    categorias = [
+        Categoria(nombre="Electrónica"),
+        Categoria(nombre="Hogar"),
+        Categoria(nombre="Ropa"),
+    ]
+    db.session.add_all(categorias)
+    db.session.commit()
 
-        productos_ejemplo = [
-            Producto(nombre="Teléfono", precio=500.0, categoria_id=categorias_ejemplo[0].id),
-            Producto(nombre="Laptop", precio=1200.0, categoria_id=categorias_ejemplo[0].id),
-            Producto(nombre="Camiseta", precio=20.0, categoria_id=categorias_ejemplo[1].id),
-            Producto(nombre="Sofá", precio=800.0, categoria_id=categorias_ejemplo[2].id),
-        ]
-        db.session.add_all(productos_ejemplo)
-        db.session.commit()
+    # Insertar productos
+    productos = [
+        Producto(nombre="Teléfono", precio=699.99, categoria_id=1),
+        Producto(nombre="Aspiradora", precio=199.99, categoria_id=2),
+        Producto(nombre="Camiseta", precio=29.99, categoria_id=3),
+    ]
+    db.session.add_all(productos)
+    db.session.commit()
 
-    print("Base de datos inicializada con datos de ejemplo.")
+    # Insertar ciudades
+    ciudades = [
+        Ciudad(nombre="Madrid", lat=40.4168, lon=-3.7038),
+        Ciudad(nombre="Barcelona", lat=41.3851, lon=2.1734),
+        Ciudad(nombre="Valencia", lat=39.4699, lon=-0.3763),
+    ]
+    db.session.add_all(ciudades)
+    db.session.commit()
 
+    print("Datos iniciales insertados en las tablas.") 

@@ -1,0 +1,47 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resultado TSP</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <h1>Resultado del Problema del Viajante</h1>
+
+    <!-- Mapa -->
+    <div>
+        <h2>Mapa de Ciudades Seleccionadas</h2>
+        <iframe src="{{ mapa }}" width="800" height="600"></iframe>
+    </div>
+
+    <!-- Tabla de Distancias -->
+    <div>
+        <h2>Matriz de Distancias</h2>
+        <table border="1">
+            <thead>
+                <tr>
+                    <th>Ciudad</th>
+                    {% for ciudad in ciudades %}
+                    <th>{{ ciudad }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for fila in matriz_con_indices %}
+                <tr>
+                    <td>{{ fila.ciudad }}</td>
+                    {% for distancia in fila.distancias %}
+                    <td>{{ distancia }}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <a href="{{ url_for('main.tsp') }}">Volver a Seleccionar Ciudades</a>
+</body>
+</html>
+  

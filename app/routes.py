@@ -1,8 +1,12 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
-from app.models import Categoria, Producto
+from app.models import Categoria, Producto, Ciudad
 from app_db import db
 import os # Para leer variables de entorno
 import requests
+import folium
+from geopy.distance import geodesic # Para calcular distancias entre ciudades
+
+
 
 main = Blueprint('main', __name__)
 
@@ -104,4 +108,114 @@ def generate_image():
         flash("Error en la respuesta de la API.", "error")
         return redirect(url_for('main.home'))
 
-    return render_template('home.html', imagen_url=imagen_url)
+    return render_template('home.html', imagen_url=imagen_url) 
+
+
+@main.route('/tsp', methods=['GET', 'POST'])
+def tsp():
+    if request.method == 'GET':
+        # Mostrar la página con el formulario de selección de ciudades
+        ciudades = Ciudad.query.all()  # Obtener todas las ciudades de la base de datos
+        return render_template('tsp_form.html', ciudades=ciudades)
+    
+    if request.method == 'POST':
+        # Procesar la selección de ciudades
+        ciudades_seleccionadas_ids = request.form.getlist('ciudades')
+        print("Ciudades seleccionadas IDs:", ciudades_seleccionadas_ids)
+
+        if len(ciudades_seleccionadas_ids) != 15:
+            flash("Por favor selecciona exactamente 15 ciudades.", "error")
+            return redirect(url_for('main.tsp'))
+        
+
+        # Consultar las ciudades seleccionadas en la base de datos
+
+        ciudades_seleccionadas = Ciudad.query.filter(Ciudad.id.in_(ciudades_seleccionadas_ids)).all()
+
+        print([(ciudad.nombre, ciudad.lat, ciudad.lon) for ciudad in ciudades_seleccionadas])
+
+
+        # Generar el mapa
+        try:
+            mapa = generar_mapa(ciudades_seleccionadas)
+        except Exception as e:
+            print("Error al generar el mapa:", e)
+            flash("Error al generar el mapa.", "error")
+            return redirect(url_for('main.tsp'))
+
+        # Calcular la matriz de distancias
+        try:
+            matriz = calcular_distancias(ciudades_seleccionadas)
+            print("Matriz generada:", matriz)
+            if not matriz:
+                raise ValueError("La matriz de distancias está vacía.")
+        except Exception as e:
+            print("Error al calcular la matriz de distancias:", e)
+            flash("No se pudo generar la matriz de distancias.", "error")
+            return redirect(url_for('main.tsp'))
+
+        # Construir matriz con índices
+        matriz_con_indices = []
+        for i, fila in enumerate(matriz):
+            matriz_con_indices.append({
+                'ciudad': ciudades_seleccionadas[i].nombre,
+                'distancias': fila
+            })
+
+        # Renderizar resultado
+        return render_template(
+            'tsp_result.html',
+            mapa='static/mapa.html',
+            matriz_con_indices=matriz_con_indices,
+            ciudades=[c.nombre for c in ciudades_seleccionadas]
+        )
+
+
+
+
+
+
+import folium
+
+@main.route('/mostrar-mapa', methods=['GET'])
+def generar_mapa(ciudades):
+    print("se reciben las ciudades seleccionadas")
+    ids = request.args.get('ids', '')  # Recuperar IDs de las ciudades seleccionadas
+    ids = [int(id_) for id_ in ids.split(',') if id_]  # Convertirlos a lista de enteros
+    
+    ciudades = Ciudad.query.filter(Ciudad.id.in_(ids)).all()  # Obtener las ciudades seleccionadas
+    
+    # Crear el mapa centrado en España
+    mapa = folium.Map(location=[40.416775, -3.703790], zoom_start=6)
+    
+    # Añadir marcadores para cada ciudad
+    for ciudad in ciudades:
+        folium.Marker([ciudad.lat, ciudad.lon], tooltip=ciudad.nombre).add_to(mapa)
+    
+    mapa_html = mapa._repr_html_()  # Generar el mapa en HTM
+
+
+
+def calcular_distancias(ciudades):
+    try:
+        coordenadas = [(ciudad.lat, ciudad.lon) for ciudad in ciudades]
+        print("Coordenadas de las ciudades seleccionadas:", coordenadas)
+
+        matriz = []
+        for ciudad1 in coordenadas:
+            fila = []
+            for ciudad2 in coordenadas:
+                distancia = geodesic(ciudad1, ciudad2).kilometers
+                fila.append(round(distancia, 2))
+            matriz.append(fila)
+        print("Matriz calculada correctamente:", matriz)
+        return matriz       
+
+    except Exception as e:
+        print("Error al calcular las distancias.", e)
+        return None
+
+
+
+
+

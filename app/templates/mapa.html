@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Mapa de Ciudades{% endblock %}
+{% block content %}
+<h2>Mapa de Ciudades Seleccionadas</h2>
+<div>
+    {{ mapa|safe }}
+</div>
+{% endblock %}
+
+
+<h3>Tabla de Distancias</h3>
+<table border="1">
+    <thead>
+        <tr>
+            <th></th>
+            {% for ciudad in ciudades %}
+            <th>{{ ciudad.nombre }}</th>
+            {% endfor %}
+        </tr>
+    </thead>
+    <tbody>
+        {% for i, fila in enumerate(distancias) %}
+        <tr>
+            <td>{{ ciudades[i].nombre }}</td>
+            {% for distancia in fila %}
+            <td>{{ distancia }}</td>
+            {% endfor %}
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
