@@ -88,6 +88,7 @@ def generate_image():
     }
     data = {
         "prompt": prompt,
+        "model":"dalle-3"
         "n": 1,
         "size": "256x256",
     }
