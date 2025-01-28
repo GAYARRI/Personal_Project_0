@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, Flask
-from flask import jsonify
+from flask import jsonify,flash
 from app.models import Categoria, Producto, Ciudad
 from app_db import db
 import os # Para leer variables de entorno
@@ -20,12 +20,12 @@ def categorias():
     if request.method == 'POST':
         nombre = request.form.get('nombre')
         if not nombre:
-            Flask("El nombre de la categoría es obligatorio.", "error")
+            flash("El nombre de la categoría es obligatorio.", "error")
         else:
             nueva_categoria = Categoria(nombre=nombre)
             db.session.add(nueva_categoria)
             db.session.commit()
-            Flask("Categoría añadida con éxito.", "success")
+            flash("Categoría añadida con éxito.", "success")
     categorias = Categoria.query.all()
     return render_template('categorias.html', categorias=categorias)
 
@@ -34,7 +34,7 @@ def borrar_categoria(id):
     categoria = Categoria.query.get_or_404(id)
     db.session.delete(categoria)
     db.session.commit()
-    Flask("Categoría eliminada con éxito.", "success")
+    flash("Categoría eliminada con éxito.", "success")
     return redirect(url_for('main.categorias'))
 
 # Gestión de productos
@@ -46,12 +46,12 @@ def productos():
         precio = request.form.get('precio')
         categoria_id = request.form.get('categoria_id')
         if not nombre or not precio or not categoria_id:
-            Flask("Todos los campos son obligatorios.", "error")
+            flash("Todos los campos son obligatorios.", "error")
         else:
             nuevo_producto = Producto(nombre=nombre, precio=float(precio), categoria_id=int(categoria_id))
             db.session.add(nuevo_producto)
             db.session.commit()
-            Flask("Producto añadido con éxito.", "success")
+            flash("Producto añadido con éxito.", "success")
     productos = Producto.query.all()
     return render_template('productos.html', productos=productos, categorias=categorias)
 
@@ -60,7 +60,7 @@ def borrar_producto(id):
     producto = Producto.query.get_or_404(id)
     db.session.delete(producto)
     db.session.commit()
-    Flask("Producto eliminado con éxito.", "success")
+    flash("Producto eliminado con éxito.", "success")
     return redirect(url_for('main.productos'))
 
 # Resumen por categorías
@@ -141,7 +141,8 @@ def generate_image():
         image_url = image_response['data'][0]['url']
 
         # Renderizar el resultado
-        return render_template('image_result.html', image_url=image_url)
+        return render_template('image_result.html', image_url=image_url, home_url=url_for('main.home'))
+
         
 
 
@@ -162,7 +163,7 @@ def tsp():
         print("Ciudades seleccionadas IDs:", ciudades_seleccionadas_ids)
 
         if len(ciudades_seleccionadas_ids) != 15:
-            Flask("Por favor selecciona exactamente 15 ciudades.", "error")
+            flash("Por favor selecciona exactamente 15 ciudades.", "error")
             return redirect(url_for('main.tsp'))
         
 
@@ -178,7 +179,7 @@ def tsp():
             mapa = generar_mapa(ciudades_seleccionadas)
         except Exception as e:
             print("Error al generar el mapa:", e)
-            Flask("Error al generar el mapa.", "error")
+            flash("Error al generar el mapa.", "error")
             return redirect(url_for('main.tsp'))
 
         # Calcular la matriz de distancias
@@ -189,7 +190,7 @@ def tsp():
                 raise ValueError("La matriz de distancias está vacía.")
         except Exception as e:
             print("Error al calcular la matriz de distancias:", e)
-            Flask("No se pudo generar la matriz de distancias.", "error")
+            flash("No se pudo generar la matriz de distancias.", "error")
             return redirect(url_for('main.tsp'))
 
         # Construir matriz con índices

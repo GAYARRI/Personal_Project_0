@@ -4,11 +4,25 @@
 
 {% block content %}
 <h1>Gestión de Categorías</h1>
+
+<!-- Mostrar mensajes flash -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <ul class="flashes">
+        {% for category, message in messages %}
+        <li class="{{ category }}">{{ message }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+{% endwith %}
+
+<!-- Formulario para añadir categorías -->
 <form method="POST" action="{{ url_for('main.categorias') }}">
     <input type="text" name="nombre" placeholder="Nombre de la categoría" required>
     <button type="submit">Añadir Categoría</button>
 </form>
 
+<!-- Tabla de categorías existentes -->
 <table border="1">
     <thead>
         <tr>
@@ -31,6 +45,4 @@
         {% endfor %}
     </tbody>
 </table>
-
-<a href="{{ url_for('main.home') }}">Volver al inicio</a>
 {% endblock %}
