@@ -119,6 +119,7 @@ def tsp():
         return render_template('tsp_form.html', ciudades=ciudades)
     
     if request.method == 'POST':
+
         # Procesar la selección de ciudades
         ciudades_seleccionadas_ids = request.form.getlist('ciudades')
         print("Ciudades seleccionadas IDs:", ciudades_seleccionadas_ids)
@@ -134,6 +135,7 @@ def tsp():
 
         print([(ciudad.nombre, ciudad.lat, ciudad.lon) for ciudad in ciudades_seleccionadas])
 
+        
 
         # Generar el mapa
         try:
@@ -162,6 +164,13 @@ def tsp():
                 'distancias': fila
             })
 
+        # Verificar que la matriz se almacena correctamente en sesión
+        session['matriz_distancias'] = matriz
+        session['ciudades'] = [c.nombre for c in ciudades_seleccionadas]
+
+        print("Matriz guardada en sesión:", session['matriz_distancias'])  # Agrega este print para depuración
+    
+
         # Renderizar resultado
         return render_template(
             'tsp_result.html',
@@ -171,6 +180,49 @@ def tsp():
         )
 
 
+from flask import session, jsonify
+import numpy as np
+from app.heuristica_tsp import heuristica_tsp  # Importamos el algoritmo heurístico
+
+@main.route('/resolver-tsp', methods=['POST'])
+def resolver_tsp():
+    """Ejecuta la heurística TSP sobre la matriz almacenada y devuelve JSON."""
+    if 'matriz_distancias' not in session:
+        return jsonify({'error': 'No hay una matriz almacenada en la sesión'}), 400
+
+    matriz = np.array(session['matriz_distancias'])
+
+    if matriz.ndim != 2:
+        return jsonify({'error': 'La matriz de distancias no tiene el formato correcto'}), 500
+
+    ruta_heuristica = heuristica_tsp(matriz)
+
+    # Calcular la distancia total recorrida
+    distancia_total = sum(matriz[ruta_heuristica[i]][ruta_heuristica[i + 1]] for i in range(len(ruta_heuristica) - 1))
+
+    # Guardar la ruta optimizada en sesión
+    session['ruta_heuristica'] = ruta_heuristica
+
+    # Crear el mapa con la ruta optimizada
+    coordenadas_ciudades = {ciudad.nombre: (ciudad.lat, ciudad.lon) for ciudad in Ciudad.query.filter(Ciudad.nombre.in_(session['ciudades'])).all()}
+    ruta_coordenadas = [coordenadas_ciudades[session['ciudades'][i]] for i in ruta_heuristica]
+
+    # Crear el mapa
+    mapa_ruta = folium.Map(location=ruta_coordenadas[0], zoom_start=6)
+    folium.PolyLine(ruta_coordenadas, color="blue", weight=5, opacity=0.7).add_to(mapa_ruta)
+
+    # Guardar el mapa en el directorio static
+    mapa_ruta.save(os.path.join('app','static','mapa_ruta_optima.html'))
+
+    print("Mapa generado y guardado en app/static/mapa_ruta_optima.html")  # Depuración
+
+    # Retornar los datos de la ruta y la URL del mapa
+    return jsonify({
+        'ruta': [session['ciudades'][i] for i in ruta_heuristica],
+        'orden_ids': ruta_heuristica,
+        'distancia_total': round(distancia_total, 2),
+        'mapa_ruta': "static/mapa_ruta_optima.html"  # Retornamos la URL del mapa generado
+    })
 
 
 
@@ -218,4 +270,31 @@ def calcular_distancias(ciudades):
 
 
 
+@main.route('/ruta-optima', methods=['GET'])
+def ruta_optima():
 
+    """Genera y muestra un mapa con la ruta óptima."""
+    if 'ruta_heuristica' not in session or 'ciudades' not in session:
+        flash("No hay una ruta optimizada disponible. Selecciona ciudades primero.", "error")
+        return redirect(url_for('main.tsp'))
+
+    ciudades = session['ciudades']
+    ruta_heuristica = session['ruta_heuristica']
+
+    # Crear el mapa centrado en la primera ciudad
+    coordenadas_ciudades = [ciudad.latlon for ciudad in Ciudad.query.filter(Ciudad.nombre.in_(ciudades)).all()]
+    ruta_coordenadas = [coordenadas_ciudades[ciudades[i]] for i in ruta_heuristica]
+
+    mapa_ruta = folium.Map(location=coordenadas_ciudades[0], zoom_start=6)
+
+    # Añadir marcadores
+    for i, ciudad in enumerate(ruta_heuristica):
+        folium.Marker(coordenadas_ciudades[ciudad], tooltip=ciudades[ciudad]).add_to(mapa_ruta)
+
+    # Dibujar la ruta óptima en el mapa
+    folium.PolyLine([coordenadas_ciudades[i] for i in ruta_heuristica], color="blue", weight=5, opacity=0.7).add_to(mapa_ruta)
+
+    # Guardar el mapa como HTML
+    mapa_ruta.save("static/mapa_ruta_optima.html")
+
+    return render_template("ruta_optima.html", mapa_ruta="static/mapa_ruta_optima.html")

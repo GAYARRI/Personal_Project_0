@@ -3,9 +3,15 @@ from flask import Flask
 from app_db import db
 from app.models import Categoria, Producto, Ciudad  # Importar todas las clases necesarias
 from app import routes
+import os
 
 def create_app():
+
     app = Flask(__name__)
+
+    if not os.path.exists('app/static'):
+        os.makedirs('app/static')
+        
     app.config.from_object('config.Config')
 
     # Inicializar extensiones
