@@ -161,24 +161,23 @@ def tsp():
 
         # Procesar la selección de ciudades
         ciudades_seleccionadas_ids = request.form.getlist('ciudades')
+        ciudades_seleccionadas = Ciudad.query.filter(Ciudad.id.in_(ciudades_seleccionadas_ids)).all()
         print("Ciudades seleccionadas IDs:", ciudades_seleccionadas_ids)
 
         if len(ciudades_seleccionadas_ids) != 15:
             flash("Por favor selecciona exactamente 15 ciudades.", "error")
             return redirect(url_for('main.tsp'))
         
-
+        print([(ciudad.nombre, ciudad.lat, ciudad.lon) for ciudad in ciudades_seleccionadas])
         # Consultar las ciudades seleccionadas en la base de datos
 
-        ciudades_seleccionadas = Ciudad.query.filter(Ciudad.id.in_(ciudades_seleccionadas_ids)).all()
-
-        print([(ciudad.nombre, ciudad.lat, ciudad.lon) for ciudad in ciudades_seleccionadas])
 
         
 
         # Generar el mapa
         try:
             mapa = generar_mapa(ciudades_seleccionadas)
+            mapa.save(os.path.join('app', 'static', 'mapa_seleccionado.html'))
         except Exception as e:
             print("Error al generar el mapa:", e)
             flash("Error al generar el mapa.", "error")
@@ -213,7 +212,7 @@ def tsp():
         # Renderizar resultado
         return render_template(
             'tsp_result.html',
-            mapa='static/mapa.html',
+            mapa='static/mapa_seleccionado.html',
             matriz_con_indices=matriz_con_indices,
             ciudades=[c.nombre for c in ciudades_seleccionadas]
         )
@@ -270,20 +269,25 @@ import folium
 
 @main.route('/mostrar-mapa', methods=['GET'])
 def generar_mapa(ciudades):
-    print("se reciben las ciudades seleccionadas")
-    ids = request.args.get('ids', '')  # Recuperar IDs de las ciudades seleccionadas
-    ids = [int(id_) for id_ in ids.split(',') if id_]  # Convertirlos a lista de enteros
-    
-    ciudades = Ciudad.query.filter(Ciudad.id.in_(ids)).all()  # Obtener las ciudades seleccionadas
-    
-    # Crear el mapa centrado en España
-    mapa = folium.Map(location=[40.416775, -3.703790], zoom_start=6)
-    
-    # Añadir marcadores para cada ciudad
-    for ciudad in ciudades:
-        folium.Marker([ciudad.lat, ciudad.lon], tooltip=ciudad.nombre).add_to(mapa)
-    
-    mapa_html = mapa._repr_html_()  # Generar el mapa en HTM
+    # Verificar si las ciudades tienen coordenadas válidas
+    if not ciudades:
+        return None  # Si no hay ciudades, retornar None
+
+    # Crear el mapa centrado en la primera ciudad
+    coordenadas = [(ciudad.lat, ciudad.lon) for ciudad in ciudades]  # Obtener las coordenadas de cada ciudad
+
+    # Verificar si las coordenadas no están vacías
+    if not coordenadas:
+        return None  # Si no se obtienen coordenadas, retornar None
+
+    # Crear el mapa en Folium
+    mapa = folium.Map(location=coordenadas[0], zoom_start=6)
+
+    # Añadir los marcadores de las ciudades al mapa
+    for lat, lon in coordenadas:
+        folium.Marker([lat, lon]).add_to(mapa)
+
+    return mapa  # Retornar el mapa
 
 
 
