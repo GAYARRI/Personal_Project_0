@@ -1,0 +1,27 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ruta Óptima</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <h1>Ruta Óptima Calculada</h1>
+
+    <!-- Mapa con la ruta óptima -->
+    <div style="text-align: center;">
+        <h2>Mapa con la Ruta Optimizada</h2>
+        <iframe src="{{ mapa_ruta }}" width="800" height="600"></iframe>
+    </div>
+
+    <!-- Botón para volver a la selección de ciudades -->
+    <div style="text-align: center; margin-top: 20px;">
+        <button onclick="window.location.href='{{ url_for('main.tsp') }}'" 
+                style="padding: 10px 20px; font-size: 16px; background-color: #dc3545; color: white; border: none; cursor: pointer;">
+            Volver a Selección de Ciudades
+        </button>
+    </div>
+</body>
+</html>
