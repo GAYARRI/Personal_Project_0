@@ -5,8 +5,7 @@ from app.models import Categoria, Producto,Ciudad
 # Crear la aplicación y establecer el contexto
 app = create_app()
 with app.app_context():
-    db.create_all()  # Crear tablas si no existen
-    db.create_all
+    db.create_all(checkfirst=True)  # Crear tablas si no existen
 
 with app.app_context():
     # Insertar categorías

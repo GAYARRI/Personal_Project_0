@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: firstapp
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: firstapp
+  template:
+    metadata:
+      labels:
+        app: firstapp
+    spec:
+      containers:
+        - name: first
+          image: gayarri/firstapp:1.0
+          ports:
+            - containerPort: 5000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: firstapp-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: fistapp
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 5000

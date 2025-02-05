@@ -12,3 +12,9 @@ SQLAlchemy==2.0.37
 typing_extensions==4.12.2
 waitress==3.0.2
 Werkzeug==2.2.3
+requests
+folium
+openai
+geopy
+gunicorn
+
