@@ -13,8 +13,8 @@ typing_extensions==4.12.2
 waitress==3.0.2
 Werkzeug==2.2.3
 requests
-folium
-openai
+folium==0.12
+openai==0.28
 geopy
 gunicorn
 
