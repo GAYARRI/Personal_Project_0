@@ -17,4 +17,6 @@ folium==0.12
 openai==0.28
 geopy
 gunicorn
-
+opencv-python
+numpy
+sckit-learn

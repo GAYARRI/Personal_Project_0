@@ -8,7 +8,16 @@ import folium
 from geopy.distance import geodesic # Para calcular distancias entre ciudades
 import openai
 import json
+from werkzeug.utils import secure_filename 
+import cv2
+import numpy as np
+from collections import Counter  # 📌 Importar Counter para contar los colores más frecuentes
+from sklearn.cluster import KMeans  # 📌
 
+
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
+img=cv2.imread("static/uploads/UP.jpg")
+hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
 
 
@@ -345,3 +354,132 @@ def ruta_optima():
 @main.route('/rubik', methods=['GET'])
 def rubik_home():
     return render_template('rubik.html')
+
+
+def allowed_file(filename):
+    """Verifica si el archivo tiene una extensión permitida."""
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+
+@main.route('/upload-rubik', methods=['POST'])
+def upload_rubik_images():
+    if 'files[]' not in request.files:
+        return render_template("rubik.html", message="Error: No se enviaron archivos.")
+
+    files = request.files.getlist('files[]')
+
+    if len(files) != 6:
+        return render_template("rubik.html", message="Debes subir exactamente 6 imágenes.")
+
+    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+    face_names = ["UP", "DOWN", "LEFT", "RIGHT", "FRONT", "BACK"]
+    
+    for i, file in enumerate(files):
+        if file and allowed_file(file.filename):
+            filename = secure_filename(f"{face_names[i]}.jpg")
+            file_path = os.path.join(UPLOAD_FOLDER, filename)
+            file.save(file_path)
+
+    return render_template("rubik.html", message="Imágenes subidas correctamente.")
+
+# Definir los rangos de colores en HSV para cada sticker y los procesamos en forma legible para el algoritmo
+
+def obtener_colores_dominantes(image_path, k=6):
+    """Detecta los colores más dominantes en la imagen usando K-Means."""
+    img = cv2.imread(image_path)
+    if img is None:
+        print(f"Error: No se pudo cargar la imagen {image_path}")
+        return None
+
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)  # Convertimos a HSV
+    img = img.reshape((-1, 3))  # Convertimos a una lista de píxeles
+
+    # Usar K-Means para encontrar los k colores dominantes
+    kmeans = KMeans(n_clusters=k, n_init=10)
+    kmeans.fit(img)
+    colores = kmeans.cluster_centers_.astype(int)
+
+    return colores  # Retorna los valores HSV de los colores detectados
+
+
+def detectar_color(hsv_pixel, colores_dominantes):
+    """Compara un píxel HSV con los colores dominantes de la imagen y encuentra la mejor coincidencia."""
+    distancias = [
+        (color, np.linalg.norm(hsv_pixel - color)) for color in colores_dominantes
+    ]
+    color_mas_cercano = min(distancias, key=lambda x: x[1])[0]  # Encuentra el color más cercano
+    return str(color_mas_cercano)
+
+
+def detectar_color_hsv(hsv_region, colores_dominantes):
+    """Promedia una región de píxeles y detecta el color basado en HSV."""
+    if hsv_region is None or hsv_region.size == 0:
+        return "?"
+
+    if hsv_region.ndim < 2:
+        print(f"Advertencia: hsv_region con dimensiones inesperadas: {hsv_region.shape}")
+        return "?"
+
+    avg_hsv = np.median(hsv_region.reshape(-1, 3), axis=0)  # Usa mediana en lugar de promedio
+    color_detectado = detectar_color(avg_hsv, colores_dominantes)
+
+
+    return str(color_detectado)  # ✅ Ahora `detectar_color()` usa los colores dinámicos
+
+
+
+
+
+def procesar_imagen_cubo(image_path):
+    """Procesa una imagen y detecta los colores de los 9 stickers."""
+    img = cv2.imread(image_path)
+    if img is None:
+        return None  # Evita continuar si la imagen no se pudo leer
+
+    img = cv2.resize(img, (300, 300))
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+
+    # ✅ Obtener los colores dominantes en la imagen
+    colores_dominantes = obtener_colores_dominantes(image_path)
+
+    # ✅ Aumentar saturación y brillo
+    hsv[:, :, 1] = cv2.add(hsv[:, :, 1], 50)
+    hsv[:, :, 2] = cv2.add(hsv[:, :, 2], 30)
+
+    posiciones = [
+        (50, 50), (150, 50), (250, 50),
+        (50, 150), (150, 150), (250, 150),
+        (50, 250), (150, 250), (250, 250)
+    ]
+
+    colores_detectados = []
+    for pos in posiciones:
+        x, y = pos
+        region = hsv[y-10:y+10, x-10:x+10]  # Extraemos una región
+
+        if region.size == 0:
+            region = hsv[y, x].reshape(1, 1, 3)  # Usamos el píxel central si la región está vacía
+
+        color = detectar_color_hsv(region, colores_dominantes)  # Comparamos con los colores dinámicos
+        colores_detectados.append(color)
+
+    return colores_detectados
+
+
+
+
+@main.route('/procesar-cubo', methods=['GET'])
+def procesar_cubo():
+    """Procesa las imágenes subidas y genera la representación del cubo."""
+    face_names = ["UP", "DOWN", "LEFT", "RIGHT", "FRONT", "BACK"]
+    estado_cubo = {}
+
+    for face in face_names:
+        image_path = f"static/uploads/{face}.jpg"
+        colores = procesar_imagen_cubo(image_path)
+        if colores is None:
+            return render_template("rubik.html", message=f"Error procesando {face}.jpg")
+        estado_cubo[face] = "".join(colores)  # Convertir lista a string
+
+    return render_template("rubik.html", message="Colores detectados correctamente", estado_cubo=estado_cubo)

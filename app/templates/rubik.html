@@ -3,11 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cubo de Rubik</title>
+    <title>Subir Imágenes del Cubo de Rubik</title>
 </head>
 <body>
-    <h1>Cubo de Rubik</h1>
-    <p>Página en construcción... Aquí agregaremos la funcionalidad paso a paso.</p>
-    <a href="{{ url_for('main.home') }}">Volver a Inicio</a>
+    <h1>Cubo de Rubik - Subir Imágenes</h1>
+    
+    <form action="{{ url_for('main.upload_rubik_images') }}" method="post" enctype="multipart/form-data">
+        <label for="files">Selecciona las 6 imágenes del cubo:</label>
+        <input type="file" id="files" name="files[]" accept="image/*" multiple required>
+        <br>
+        <button type="submit">Subir Imágenes</button>
+    </form>
+
+    {% if message %}
+        <p>{{ message }}</p>
+    {% endif %}
+
+    <form action="{{ url_for('main.procesar_cubo') }}" method="get">
+        <button type="submit">Procesar Cubo</button>
+    </form>
+    
+    {% if estado_cubo %}
+        <h2>Estado Detectado del Cubo</h2>
+        <pre>{{ estado_cubo }}</pre>
+    {% endif %}
+    
+
+
 </body>
 </html>
+
