@@ -341,3 +341,7 @@ def ruta_optima():
     mapa_ruta.save("static/mapa_ruta_optima.html")
 
     return render_template("ruta_optima.html", mapa_ruta="static/mapa_ruta_optima.html")
+
+@main.route('/rubik', methods=['GET'])
+def rubik_home():
+    return render_template('rubik.html')
