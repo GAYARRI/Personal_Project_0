@@ -16,8 +16,7 @@ from sklearn.cluster import KMeans  # 📌
 
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
-img=cv2.imread("static/uploads/UP.jpg")
-hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+
 
 
 
@@ -372,13 +371,13 @@ def upload_rubik_images():
     if len(files) != 6:
         return render_template("rubik.html", message="Debes subir exactamente 6 imágenes.")
 
-    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+    #os.makedirs(UPLOAD_FOLDER, exist_ok=True)
     face_names = ["UP", "DOWN", "LEFT", "RIGHT", "FRONT", "BACK"]
     
     for i, file in enumerate(files):
         if file and allowed_file(file.filename):
             filename = secure_filename(f"{face_names[i]}.jpg")
-            file_path = os.path.join(UPLOAD_FOLDER, filename)
+            file_path = os.path.join("app/static/uploads", filename)
             file.save(file_path)
 
     return render_template("rubik.html", message="Imágenes subidas correctamente.")
@@ -476,7 +475,7 @@ def procesar_cubo():
     estado_cubo = {}
 
     for face in face_names:
-        image_path = f"static/uploads/{face}.jpg"
+        image_path = f"app/static/uploads/{face}.jpg"
         colores = procesar_imagen_cubo(image_path)
         if colores is None:
             return render_template("rubik.html", message=f"Error procesando {face}.jpg")
