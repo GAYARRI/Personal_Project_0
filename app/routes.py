@@ -13,6 +13,9 @@ import cv2
 import numpy as np
 from collections import Counter  # 📌 Importar Counter para contar los colores más frecuentes
 from sklearn.cluster import KMeans  # 📌
+from flask import session, jsonify
+import numpy as np
+from app.heuristica_tsp import heuristica_tsp  # Importamos el algoritmo heurístic
 
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
@@ -179,9 +182,6 @@ def tsp():
         print([(ciudad.nombre, ciudad.lat, ciudad.lon) for ciudad in ciudades_seleccionadas])
         # Consultar las ciudades seleccionadas en la base de datos
 
-
-        
-
         # Generar el mapa
         try:
             mapa = generar_mapa(ciudades_seleccionadas)
@@ -226,9 +226,7 @@ def tsp():
         )
 
 
-from flask import session, jsonify
-import numpy as np
-from app.heuristica_tsp import heuristica_tsp  # Importamos el algoritmo heurístico
+
 
 @main.route('/resolver-tsp', methods=['POST'])
 def resolver_tsp():
@@ -427,9 +425,6 @@ def detectar_color_hsv(hsv_region, colores_dominantes):
     return str(color_detectado)  # ✅ Ahora `detectar_color()` usa los colores dinámicos
 
 
-
-
-
 def procesar_imagen_cubo(image_path):
     """Procesa una imagen y detecta los colores de los 9 stickers."""
     img = cv2.imread(image_path)
@@ -464,8 +459,6 @@ def procesar_imagen_cubo(image_path):
         colores_detectados.append(color)
 
     return colores_detectados
-
-
 
 
 @main.route('/procesar-cubo', methods=['GET'])

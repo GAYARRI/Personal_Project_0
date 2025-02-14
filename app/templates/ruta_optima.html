@@ -13,12 +13,12 @@
     <!-- Mapa con la ruta óptima -->
     <div style="text-align: center;">
         <h2>Mapa con la Ruta Optimizada</h2>
-        <iframe src="{{ mapa_ruta }}" width="800" height="600"></iframe>
+        <iframe src="{{ mapa_ruta }}" width="400" height="300"></iframe>
     </div>
 
     <!-- Botón para volver a la selección de ciudades -->
     <div style="text-align: center; margin-top: 20px;">
-        <button onclick="window.location.href='{{ url_for('main.tsp') }}'" 
+                <button onclick="window.location.href='{{ url_for('main.tsp') }}'">Ir a TSP</button> 
                 style="padding: 10px 20px; font-size: 16px; background-color: #dc3545; color: white; border: none; cursor: pointer;">
             Volver a Selección de Ciudades
         </button>

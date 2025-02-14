@@ -1,47 +1,52 @@
 {% extends "base.html" %}
 
-{% block title %}Demo de Funcionalidades con IA {% endblock %}
-
-{% block header %}
-<h1>Demo de Funcionalidades con IA</h1>
-{% endblock %}
-
 {% block content %}
-<div>
-    <h2>3.-Interacción con BBDD Local</h2>
-    <ul>
-        <li><a href="{{ url_for('main.categorias') }}">Gestionar Categorías</a></li>
-        <li><a href="{{ url_for('main.productos') }}">Gestionar Productos</a></li>
-        <li><a href="{{ url_for('main.resumen') }}">Ver Resumen</a></li>
-    </ul>
-</div>
+    <header>
+        <ul><li><a href="/">Story_Telling</a></li></ul>
+        
 
-<div>
-    <h2>4.-Generación de Imágenes</h2>
-    <form method="POST" action="{{ url_for('main.generate_image') }}" onsubmit="mostrarCargando()">
-        <label for="prompt">Introduce el prompt para la imagen:</label>
-        <input type="text" id="prompt" name="prompt" required>
-        <button type="submit">Generar Imagen</button>
-    </form>
-    <div id="spinner" style="display: none; text-align: center;">
-        <p>Generando imagen...</p>
-        <div class="spinner"></div>
-    </div>
-    {% if imagen_url %}
-    <div>
-        <h3>Imagen generada:</h3>
-        <img src="{{ imagen_url }}" alt="Imagen generada por DALL-E">
-    </div>
-    {% endif %}
-</div>
+        <h1>Demo portfolio funcionalidades asistidas por IA</h1> 
+    
+        <div>
+            <h2>1.- Operations Research Corner</h2>
+            <ul>
+                      
+                <li><a href="/tsp">1.- Problema del Viajante</a></li>
+                <li><a href="/rubik">2.- Cubo de Rubik</a></li>
+            </ul>
+        </div>
+
+        <div>
+            <h2>2.- Interacción con BBDD Local</h3>
+            <ul>
+                <li><a href="{{ url_for('main.categorias') }}">Gestionar Categorías</a></li>
+                <li><a href="{{ url_for('main.productos') }}">Gestionar Productos</a></li>
+                <li><a href="{{ url_for('main.resumen') }}">Ver Resumen</a></li>
+            </ul>
+        </div>
+
+        <div>
+            <h2>3.- Generación de Imágenes @ DALL-E</h4>
+            <form method="POST" action="{{ url_for('main.generate_image') }}" onsubmit="mostrarCargando()">
+                <label for="prompt">Introduce el prompt para la imagen:</label>
+                <input type="text" id="prompt" name="prompt" required>
+                <button type="submit">Generar Imagen</button>
+            </form>
+            
+            <div id="spinner" style="display: none; text-align: center;">
+                <p>Generando imagen...</p>
+                <div class="spinner"></div>
+            </div>
+            
+            {% if imagen_url %}
+            <div>
+                <h3>Imagen generada:</h3>
+                <img src="{{ imagen_url }}" alt="Imagen generada por DALL-E">
+            </div>
+            {% endif %}
+        </div>
+    </header>
 {% endblock %}
 
-<form method="POST" action="/calcular-distancias">
-    <label for="ciudades">Selecciona 15 ciudades:</label>
-    <select id="ciudades" name="ciudades" multiple required>
-        {% for ciudad in ciudades %}
-        <option value="{{ ciudad.id }}">{{ ciudad.nombre }}</option>
-        {% endfor %}
-    </select>
-    <button type="submit">Calcular distancias</button>
-</form>
+
+        

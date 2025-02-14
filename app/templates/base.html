@@ -4,33 +4,36 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Gestión de Registros{% endblock %}</title>
-    <title>Imagen en Esquina Superior Derecha</title>
+    
     <style>
-        .imagen-superior-derecha {
+        /* Imagen en la parte superior derecha */
+        .imagen-circular {
             position: absolute;
             top: 0;
-            right: 0;
-            width: 100px; /* Ajusta el tamaño según necesites */
-            height: auto;
+            left: 40%;
+            max-width: 200px;
+            width: 200%;
+            border-radius: 50%; /* Hace que la imagen sea completamente circular */
+            object-fit: cover; /* Ajusta la imagen sin distorsionarla */
+            object-position: 80% center;
+            display: block;
+            margin: auto /* Centrar la imagen */
+        }
+
+        /* Asegurar que los elementos de la lista estén en línea separada */
+        li {
+            display: block;
         }
     </style>
 
-
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}?v=2">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}?v=3">
 </head>
 <body>
-        <img src="{{ url_for('static', filename='img/jarg.png') }}" width="200" height="100">
-        <h1>{% block header %}Gestión de Tablas{% endblock %}</h1>
-        <nav>
-            <ul>
-                <li><a href="/"><button>Volver al inicio</button></a></li>
-                <li><a href="/tsp">1.- Problema del Viajante</a></li>
-                <li><a href="/rubik">2.- Cubo de Rubik</a></li>
-
-            </ul>
-
-        </nav>
+    <header>
+        <button onclick="window.location.href='/'">Inicio</button>
+        <img src="{{ url_for('static', filename='img/jarg2.png') }}" class="imagen-circular"><br><br>
     </header>
+
     <main>
         {% with messages = get_flashed_messages(with_categories=True) %}
         {% if messages %}
@@ -41,16 +44,16 @@
             </ul>
         {% endif %}
         {% endwith %}
+
         {% block content %}{% endblock %}
     </main>
+
+    <script>
+        function mostrarCargando() {
+            // Mostrar spinner mientras se genera la imagen
+            document.getElementById('spinner').style.display = 'block';
+        }
+    </script>
 </body>
 </html>
-
-<script>
-    function mostrarCargando() {
-        // Mostrar spinner mientras se genera la imagen
-        const spinner = document.getElementById('spinner');
-        spinner.style.display = 'block';
-    }
-</script>
 

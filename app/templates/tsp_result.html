@@ -9,37 +9,69 @@
 <body>
     <h1>Resultado del Problema del Viajante</h1>
 
+    <a href="{{ url_for('main.tsp') }}">Volver a Seleccionar Ciudades</a>
+
     <!-- Mapa Inicial con las ciudades seleccionadas -->
     <div>
         <h2>Mapa de Ciudades Seleccionadas</h2>
-        <iframe src="{{ mapa }}" width="800" height="600"></iframe>
+        <iframe src="{{ mapa }}" width="400" height="300"></iframe>
     </div>
 
     <!-- Tabla de Distancias -->
     <div>
-        <h2>Matriz de Distancias</h2>
-        <table border="1">
-            <thead>
-                <tr>
-                    <th>Ciudad</th>
-                    {% for ciudad in ciudades %}
-                    <th>{{ ciudad }}</th>
+        <h4>Matriz de Distancias</h4>
+        <div class="tabla-container">
+            <table border="1">
+                <thead>
+                    <tr>
+                        <th>Ciudad</th>
+                        {% for ciudad in ciudades %}
+                        <th>{{ ciudad }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for fila in matriz_con_indices %}
+                    <tr>
+                        <td>{{ fila.ciudad }}</td>
+                        {% for distancia in fila.distancias %}
+                        <td>{{ distancia }}</td>
+                        {% endfor %}
+                    </tr>
                     {% endfor %}
-                </tr>
-            </thead>
-            <tbody>
-                {% for fila in matriz_con_indices %}
-                <tr>
-                    <td>{{ fila.ciudad }}</td>
-                    {% for distancia in fila.distancias %}
-                    <td>{{ distancia }}</td>
-                    {% endfor %}
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                </tbody>
+            </table>
+        </div>
     </div>
-
+    
+    <style>
+        .tabla-container {
+            max-width: 400px; /* Limita el ancho de la tabla */
+            max-height: 200px; /* Limita la altura */
+            overflow: auto; /* Agrega desplazamiento si es necesario */
+            border: 1px solid #ddd; /* Borde sutil */
+        }
+    
+        table {
+            width: 100%; /* Se adapta al tamaño del contenedor */
+            border-collapse: collapse; /* Une los bordes */
+        }
+    
+        th, td {
+            padding: 5px;
+            text-align: center;
+            white-space: nowrap; /* Evita que el texto se divida en varias líneas */
+            font-size: 9px; /* 🔹 Controla el tamaño de la fuente */
+        }
+    
+        th {
+            background-color: #f4f4f4;
+            position: sticky;
+            top: 0;
+            font-size: 9px; /* 🔹 Tamaño de letra ligeramente más grande en los encabezados */
+        }
+    </style>
+    
     <!-- Botón para resolver TSP -->
     <div style="text-align: center; margin-top: 20px;">
         <button id="resolverTSP" 
@@ -70,15 +102,13 @@
             // Crear el iframe para el mapa generado
             const iframe = document.createElement("iframe");
             iframe.src = `{{ url_for('static', filename='mapa_ruta_optima.html') }}`;
-            iframe.width = "800";
-            iframe.height = "600";
+            iframe.width = "400";
+            iframe.height = "200";
             document.getElementById("mapaContainer").appendChild(iframe);
         })
         .catch(error => console.error("Error:", error));
     });
     </script>
-
-    <a href="{{ url_for('main.tsp') }}">Volver a Seleccionar Ciudades</a>
 </body>
 </html>
 

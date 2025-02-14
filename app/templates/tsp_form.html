@@ -2,6 +2,7 @@
 
 {% block title %}TSP: Selección de Ciudades{% endblock %}
 {% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}?v=3">
 <h2>Selecciona 15 ciudades</h2>
 <form method="POST" action="{{ url_for('main.tsp') }}">
     <select name="ciudades" multiple size="15" required>
