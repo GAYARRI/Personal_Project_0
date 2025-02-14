@@ -4,18 +4,28 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Gestión de Registros{% endblock %}</title>
+    <title>Imagen en Esquina Superior Derecha</title>
+    <style>
+        .imagen-superior-derecha {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 100px; /* Ajusta el tamaño según necesites */
+            height: auto;
+        }
+    </style>
+
+
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}?v=2">
 </head>
 <body>
-    <header>
+        <img src="{{ url_for('static', filename='img/jarg.png') }}" width="200" height="100">
         <h1>{% block header %}Gestión de Tablas{% endblock %}</h1>
         <nav>
             <ul>
-                <li><a href="/">Inicio</a></li>
-                <li><a href="/categorias">Gestión de Categorías</a></li>
-                <li><a href="/productos">Gestión de Productos</a></li>
-                <li><a href="/tsp">Problema del Viajante</a></li>
-                <a href="{{ url_for('main.rubik_home') }}">Cubo de Rubik</a>
+                <li><a href="/"><button>Volver al inicio</button></a></li>
+                <li><a href="/tsp">1.- Problema del Viajante</a></li>
+                <li><a href="/rubik">2.- Cubo de Rubik</a></li>
 
             </ul>
 

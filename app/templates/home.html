@@ -1,14 +1,14 @@
 {% extends "base.html" %}
 
-{% block title %}Demo de Funcionalidades Premium{% endblock %}
+{% block title %}Demo de Funcionalidades con IA {% endblock %}
 
 {% block header %}
-<h1>Demo de Funcionalidades Premium</h1>
+<h1>Demo de Funcionalidades con IA</h1>
 {% endblock %}
 
 {% block content %}
 <div>
-    <h2>Interacción con BBDD Local</h2>
+    <h2>3.-Interacción con BBDD Local</h2>
     <ul>
         <li><a href="{{ url_for('main.categorias') }}">Gestionar Categorías</a></li>
         <li><a href="{{ url_for('main.productos') }}">Gestionar Productos</a></li>
@@ -17,7 +17,7 @@
 </div>
 
 <div>
-    <h2>Generación de Imágenes</h2>
+    <h2>4.-Generación de Imágenes</h2>
     <form method="POST" action="{{ url_for('main.generate_image') }}" onsubmit="mostrarCargando()">
         <label for="prompt">Introduce el prompt para la imagen:</label>
         <input type="text" id="prompt" name="prompt" required>
