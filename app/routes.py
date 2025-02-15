@@ -16,9 +16,16 @@ from sklearn.cluster import KMeans  # 📌
 from flask import session, jsonify
 import numpy as np
 from app.heuristica_tsp import heuristica_tsp  # Importamos el algoritmo heurístic
+from sklearn.cluster import KMeans
+import base64
+import numpy as np
+from skimage.color import rgb2lab
+import re
+
 
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
+UPLOAD_FOLDER = "app/static/uploads"
 
 
 
@@ -53,12 +60,12 @@ def borrar_categoria(id):
 def productos():
     categorias = Categoria.query.all()
     if request.method == 'POST':
+            flash("Todos los campos son obligatorios.", "error")
+    else:
         nombre = request.form.get('nombre')
         precio = request.form.get('precio')
         categoria_id = request.form.get('categoria_id')
         if not nombre or not precio or not categoria_id:
-            flash("Todos los campos son obligatorios.", "error")
-        else:
             nuevo_producto = Producto(nombre=nombre, precio=float(precio), categoria_id=int(categoria_id))
             db.session.add(nuevo_producto)
             db.session.commit()
@@ -348,130 +355,115 @@ def ruta_optima():
 
     return render_template("ruta_optima.html", mapa_ruta="static/mapa_ruta_optima.html")
 
+# ✅ Página principal
+
 @main.route('/rubik', methods=['GET'])
 def rubik_home():
     return render_template('rubik.html')
 
+# ✅ Verifica si un archivo tiene extensión válida
 
 def allowed_file(filename):
-    """Verifica si el archivo tiene una extensión permitida."""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+# ✅ Manejo de la subida de imágenes del cubo
 
 
-@main.route('/upload-rubik', methods=['POST'])
-def upload_rubik_images():
-    if 'files[]' not in request.files:
-        return render_template("rubik.html", message="Error: No se enviaron archivos.")
-
-    files = request.files.getlist('files[]')
-
-    if len(files) != 6:
-        return render_template("rubik.html", message="Debes subir exactamente 6 imágenes.")
-
-    #os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-    face_names = ["UP", "DOWN", "LEFT", "RIGHT", "FRONT", "BACK"]
-    
-    for i, file in enumerate(files):
-        if file and allowed_file(file.filename):
-            filename = secure_filename(f"{face_names[i]}.jpg")
-            file_path = os.path.join("app/static/uploads", filename)
-            file.save(file_path)
-
-    return render_template("rubik.html", message="Imágenes subidas correctamente.")
-
-# Definir los rangos de colores en HSV para cada sticker y los procesamos en forma legible para el algoritmo
-
-def obtener_colores_dominantes(image_path, k=6):
-    """Detecta los colores más dominantes en la imagen usando K-Means."""
-    img = cv2.imread(image_path)
-    if img is None:
-        print(f"Error: No se pudo cargar la imagen {image_path}")
-        return None
-
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)  # Convertimos a HSV
-    img = img.reshape((-1, 3))  # Convertimos a una lista de píxeles
-
-    # Usar K-Means para encontrar los k colores dominantes
-    kmeans = KMeans(n_clusters=k, n_init=10)
-    kmeans.fit(img)
-    colores = kmeans.cluster_centers_.astype(int)
-
-    return colores  # Retorna los valores HSV de los colores detectados
 
 
-def detectar_color(hsv_pixel, colores_dominantes):
-    """Compara un píxel HSV con los colores dominantes de la imagen y encuentra la mejor coincidencia."""
-    distancias = [
-        (color, np.linalg.norm(hsv_pixel - color)) for color in colores_dominantes
-    ]
-    color_mas_cercano = min(distancias, key=lambda x: x[1])[0]  # Encuentra el color más cercano
-    return str(color_mas_cercano)
+def encode_image(image_path):
+    """Convierte una imagen a base64 para enviarla a OpenAI."""
+    with open(image_path, "rb") as image_file:
+        return base64.b64encode(image_file.read()).decode("utf-8")
+
+# ✅ Función para limpiar la respuesta JSON de OpenAI
+
+def limpiar_json(respuesta):
+    """Elimina delimitadores de Markdown en la respuesta JSON de OpenAI."""
+    return re.sub(r"```json|```", "", respuesta).strip()
 
 
-def detectar_color_hsv(hsv_region, colores_dominantes):
-    """Promedia una región de píxeles y detecta el color basado en HSV."""
-    if hsv_region is None or hsv_region.size == 0:
-        return "?"
 
-    if hsv_region.ndim < 2:
-        print(f"Advertencia: hsv_region con dimensiones inesperadas: {hsv_region.shape}")
-        return "?"
-
-    avg_hsv = np.median(hsv_region.reshape(-1, 3), axis=0)  # Usa mediana en lugar de promedio
-    color_detectado = detectar_color(avg_hsv, colores_dominantes)
-
-
-    return str(color_detectado)  # ✅ Ahora `detectar_color()` usa los colores dinámicos
-
-
-def procesar_imagen_cubo(image_path):
-    """Procesa una imagen y detecta los colores de los 9 stickers."""
-    img = cv2.imread(image_path)
-    if img is None:
-        return None  # Evita continuar si la imagen no se pudo leer
-
-    img = cv2.resize(img, (300, 300))
-    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-
-    # ✅ Obtener los colores dominantes en la imagen
-    colores_dominantes = obtener_colores_dominantes(image_path)
-
-    # ✅ Aumentar saturación y brillo
-    hsv[:, :, 1] = cv2.add(hsv[:, :, 1], 50)
-    hsv[:, :, 2] = cv2.add(hsv[:, :, 2], 30)
-
-    posiciones = [
-        (50, 50), (150, 50), (250, 50),
-        (50, 150), (150, 150), (250, 150),
-        (50, 250), (150, 250), (250, 250)
-    ]
-
-    colores_detectados = []
-    for pos in posiciones:
-        x, y = pos
-        region = hsv[y-10:y+10, x-10:x+10]  # Extraemos una región
-
-        if region.size == 0:
-            region = hsv[y, x].reshape(1, 1, 3)  # Usamos el píxel central si la región está vacía
-
-        color = detectar_color_hsv(region, colores_dominantes)  # Comparamos con los colores dinámicos
-        colores_detectados.append(color)
-
-    return colores_detectados
-
+# ✅ Ruta para procesar las imágenes del cubo de Rubik
 
 @main.route('/procesar-cubo', methods=['GET'])
+
 def procesar_cubo():
-    """Procesa las imágenes subidas y genera la representación del cubo."""
-    face_names = ["UP", "DOWN", "LEFT", "RIGHT", "FRONT", "BACK"]
-    estado_cubo = {}
+    carpeta = "./app/static/uploads"
+    resultados = {}
 
-    for face in face_names:
-        image_path = f"app/static/uploads/{face}.jpg"
-        colores = procesar_imagen_cubo(image_path)
-        if colores is None:
-            return render_template("rubik.html", message=f"Error procesando {face}.jpg")
-        estado_cubo[face] = "".join(colores)  # Convertir lista a string
+    # Verificar si la carpeta existe
+    if not os.path.exists(carpeta):
+        return jsonify({"error": "No se encontraron imágenes en la carpeta."}), 400
 
-    return render_template("rubik.html", message="Colores detectados correctamente", estado_cubo=estado_cubo)
+    # Iterar sobre las imágenes en la carpeta
+    for cara in os.listdir(carpeta):
+        ruta_completa = os.path.join(carpeta, cara)
+        cara_sin_extension = os.path.splitext(cara)[0]  # Nombre sin extensión
+
+        if os.path.isfile(ruta_completa):  # Asegurar que es un archivo
+            # ✅ Codificar la imagen en Base64
+            image_base64 = encode_image(ruta_completa)
+
+            # ✅ Llamada al endpoint de OpenAI
+            response = openai.ChatCompletion.create(
+                model="gpt-4o",
+                messages=[
+                    {"role": "system", "content": "Eres un asistente experto en detección de colores en cubos de Rubik."},
+                    {"role": "user", "content": [
+                        {"type": "text", "text": 
+                            f"Analiza esta imagen y detecta los 9 colores en una cuadrícula 3x3. Devuelve el resultado en JSON con la estructura: "
+                            f"{{'{cara_sin_extension}': [['color1', 'color2', 'color3'], ['color4', 'color5', 'color6'], ['color7', 'color8', 'color9']]}}"},
+                        {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_base64}"}}
+                    ]}
+                ],
+                temperature=0
+            )
+
+            # ✅ Verificar que la respuesta de OpenAI no esté vacía
+            if "choices" in response and response["choices"]:
+                content = response["choices"][0]["message"]["content"].strip()
+
+                if content:
+                    try:
+                        # ✅ Limpiar JSON antes de decodificarlo
+                        content_cleaned = limpiar_json(content)
+                        json_response = json.loads(content_cleaned)
+
+                        # ✅ Guardar el resultado con el nombre del archivo como clave
+                        resultados[cara_sin_extension] = json_response[cara_sin_extension]
+                    except json.JSONDecodeError:
+                        print(f"❌ Error al decodificar JSON para la imagen {cara}")
+                        print(f"Respuesta de OpenAI: {content}")
+                else:
+                    print(f"⚠️ Respuesta vacía para la imagen: {cara}")
+            else:
+                print(f"⚠️ No se recibió una respuesta válida de OpenAI para la imagen: {cara}")
+
+    # ✅ Retornar el resultado en JSON
+    return render_template("rubik.html", estado_cubo=resultados)
+
+
+def encode_image(image_path):
+    """Convierte una imagen a base64 para enviarla a OpenAI."""
+    with open(image_path, "rb") as image_file:
+        return base64.b64encode(image_file.read()).decode("utf-8")
+
+# ✅ Función para limpiar la respuesta JSON de OpenAI
+def limpiar_json(respuesta):
+    """Elimina delimitadores de Markdown en la respuesta JSON de OpenAI."""
+    return re.sub(r"```json|```", "", respuesta).strip()
+
+# ✅ Ruta para mostrar la página del cubo de Rubik
+
+
+@main.route('/resolver-cubo', methods=['GET'])
+def resolver_cubo():
+    # Aquí va la lógica para resolver el cubo
+    return "Cubo resuelto"  # O alguna otra acción que quieras hacer
+
+
+
+
+if __name__=="__main__":
+    app.run(debug_True)

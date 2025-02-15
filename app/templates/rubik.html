@@ -4,32 +4,58 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Subir Imágenes del Cubo de Rubik</title>
+    <style>
+        table {
+            margin: 0 auto;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid black;
+            padding: 10px;
+            text-align: center;
+        }
+        .color-cell {
+            width: 50px;
+            height: 50px;
+        }
+    </style>
 </head>
 <body>
-    <h1>Cubo de Rubik - Subir Imágenes</h1>
     
-    <form action="{{ url_for('main.upload_rubik_images') }}" method="post" enctype="multipart/form-data">
-        <label for="files">Selecciona las 6 imágenes del cubo:</label>
-        <input type="file" id="files" name="files[]" accept="image/*" multiple required>
-        <br>
-        <button type="submit">Subir Imágenes</button>
-    </form>
-
-    {% if message %}
-        <p>{{ message }}</p>
-    {% endif %}
-
     <form action="{{ url_for('main.procesar_cubo') }}" method="get">
         <button type="submit">Procesar Cubo</button>
     </form>
-    
+
     {% if estado_cubo %}
         <h2>Estado Detectado del Cubo</h2>
-        <pre>{{ estado_cubo }}</pre>
+        <table border="1">
+            <tr>
+                <th>Cara</th>
+                <th>Colores Detectados</th>
+            </tr>
+            {% for cara, colores in estado_cubo.items() %}
+                <tr>
+                    <td><strong>{{ cara }}</strong></td>
+                    <td>
+                        <table>
+                            {% for fila in colores %}
+                                <tr>
+                                    {% for color in fila %}
+                                        <td class="color-cell" style="background-color: {{ color }};"></td>
+                                    {% endfor %}
+                                </tr>
+                            {% endfor %}
+                        </table>
+                    </td>
+                </tr>
+            {% endfor %}
+        </table>      
     {% endif %}
-    
 
+    <!-- Botón para resolver el cubo -->
+    <form action="{{ url_for('main.resolver_cubo') }}" method="get">
+        <button type="submit">Resolver Cubo</button>
+    </form>
 
 </body>
 </html>
-

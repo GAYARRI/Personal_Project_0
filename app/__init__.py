@@ -2,7 +2,7 @@
 from flask import Flask
 from app_db import db
 from app.models import Categoria, Producto, Ciudad  # Importar todas las clases necesarias
-from app import routes
+from app.routes import main
 import os
 
 def create_app():
@@ -53,6 +53,6 @@ def create_app():
             db.session.commit()
 
     # Registrar las rutas
-    app.register_blueprint(routes.main)
+    app.register_blueprint(main)
 
     return app
