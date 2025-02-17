@@ -29,7 +29,6 @@ UPLOAD_FOLDER = "app/static/uploads"
 
 
 
-
 main = Blueprint('main', __name__)
 
 # Gestión de categorías
@@ -441,7 +440,12 @@ def procesar_cubo():
                 print(f"⚠️ No se recibió una respuesta válida de OpenAI para la imagen: {cara}")
 
     # ✅ Retornar el resultado en JSON
-    return render_template("rubik.html", estado_cubo=resultados)
+
+    secuencia_cubo=generar_secuencia_estado(resultados)
+
+
+
+    return render_template("rubik.html", estado_cubo=resultados, secuencia_cubo=secuencia_cubo)
 
 
 def encode_image(image_path):
@@ -461,6 +465,57 @@ def limpiar_json(respuesta):
 def resolver_cubo():
     # Aquí va la lógica para resolver el cubo
     return "Cubo resuelto"  # O alguna otra acción que quieras hacer
+
+
+def generar_secuencia_estado(jsoncubo):
+    # ✅ Generar la secuencia de colores a partir del estado del cubo
+    secuencia_estado = ""
+
+    # Iterar sobre las claves (caras) del cubo
+    for cara in jsoncubo.keys():
+        if cara in jsoncubo:  # Asegurarnos de que la cara existe
+            for row in jsoncubo[cara]:
+                for color in row:
+                    color_inicial = color[0]  # Obtener la inicial del color
+                    secuencia_estado += color_inicial
+
+    # Devolver el JSON con la secuencia de colores
+    return {"secuencia_estado": secuencia_estado}
+
+# Definir carpeta de subida
+UPLOAD_FOLDER = "app/static/uploads"
+ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png'}
+
+# ✅ Verifica si un archivo tiene una extensión válida
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+# ✅ Ruta para manejar la subida de imágenes del cubo
+@main.route('/upload-rubik', methods=['POST'])
+def upload_rubik_images():
+    if 'files[]' not in request.files:
+        return render_template("rubik.html", message="❌ Error: No se enviaron archivos.")
+
+    files = request.files.getlist('files[]')
+
+    if len(files) != 6:
+        return render_template("rubik.html", message="⚠️ Debes subir exactamente 6 imágenes en el orden correcto.")
+
+    os.makedirs(UPLOAD_FOLDER, exist_ok=True)  # Asegurar que la carpeta exista
+
+    # **ORDEN OBLIGATORIO** para asignar las caras
+
+    for i, file in enumerate(files):
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)  # Asegura un nombre seguro
+            file_path = os.path.join(UPLOAD_FOLDER,filename)
+            file.save(file_path)
+
+    return render_template("rubik.html", message="✅ Imágenes subidas correctamente. ¡Ahora puedes procesar el cubo!")
+
+
+
+
 
 
 
