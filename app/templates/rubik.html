@@ -50,18 +50,17 @@
     
     <h1 style="text-align: center;">Rubik's Cube</h1>
 
-<!-- Tabla de referencia visual -->
-<h3 style="text-align: center;">📸 Instrucciones: Etiqueta las imagenes del cubo</h3>
+    <!-- Tabla de referencia visual -->
+    <h3 style="text-align: center;">📸 Instrucciones: Etiqueta las imágenes del cubo</h3>
 
-<h4 style="text-align: center">
-             <strong>UP-</strong></td>
-             <strong>LEFT-</strong></td>
-             <strong>FRONT-</strong></td>
-             <strong>RIGHT-</strong></td>
-             <strong>DOWN-</strong></td>
-             <strong>BACK</strong></td>
-</h4>
-
+    <h4 style="text-align: center">
+        <strong>UP-</strong></td>
+        <strong>LEFT-</strong></td>
+        <strong>FRONT-</strong></td>
+        <strong>RIGHT-</strong></td>
+        <strong>DOWN-</strong></td>
+        <strong>BACK</strong></td>
+    </h4>
 
     <!-- Formulario de subida -->
     <div class="button-container">
@@ -88,8 +87,6 @@
             }
         }, 3000);
     </script>
-
-
 
     <div class="button-container">
         <!-- Botón para procesar el cubo -->
@@ -136,12 +133,18 @@
     {% endif %}
 
     <div class="button-container">
-        <!-- Botón para resolver el cubo -->
-        <form action="{{ url_for('main.resolver_cubo') }}" method="post">
-            <input type="hidden" name="secuencia_estado" value="{{ secuencia_estado }}">
+        <form id="resolverForm" action="{{ url_for('main.resolver_cubo') }}" method="post">
+            <input type="hidden" id="secuencia_cubo" name="secuencia_cubo" value='{{ secuencia_cubo | tojson | safe }}'>
             <button type="submit">Resolver Cubo</button>
         </form>
     </div>
+    
+    {% if solucion %}
+        <h2 style="text-align: center;">Solución del Cubo</h2>
+        <pre style="text-align: center; font-size: 18px; font-weight: bold;">{{ solucion }}</pre>
+    {% else %}
+        <p style="text-align: center;">❌ No se pudo generar una solución válida.</p>
+    {% endif %}  
 
 </body>
 </html>

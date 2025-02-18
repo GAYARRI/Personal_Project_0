@@ -20,7 +20,10 @@ from sklearn.cluster import KMeans
 import base64
 import numpy as np
 from skimage.color import rgb2lab
+from PIL import Image
+from io import BytesIO
 import re
+
 
 
 
@@ -358,7 +361,7 @@ def ruta_optima():
 
 @main.route('/rubik', methods=['GET'])
 def rubik_home():
-    return render_template('rubik.html')
+    return render_template('rubik.html',secuencia_cubo={})
 
 # ✅ Verifica si un archivo tiene extensión válida
 
@@ -386,29 +389,25 @@ def limpiar_json(respuesta):
 # ✅ Ruta para procesar las imágenes del cubo de Rubik
 
 @main.route('/procesar-cubo', methods=['GET'])
-
 def procesar_cubo():
     carpeta = "./app/static/uploads"
     resultados = {}
 
-    # Verificar si la carpeta existe
     if not os.path.exists(carpeta):
         return jsonify({"error": "No se encontraron imágenes en la carpeta."}), 400
 
-    # Iterar sobre las imágenes en la carpeta
     for cara in os.listdir(carpeta):
         ruta_completa = os.path.join(carpeta, cara)
-        cara_sin_extension = os.path.splitext(cara)[0]  # Nombre sin extensión
+        cara_sin_extension = os.path.splitext(cara)[0]
 
-        if os.path.isfile(ruta_completa):  # Asegurar que es un archivo
-            # ✅ Codificar la imagen en Base64
+        if os.path.isfile(ruta_completa):
             image_base64 = encode_image(ruta_completa)
 
-            # ✅ Llamada al endpoint de OpenAI
+            # Llamada a ChatGPT para el reconocimiento de colores
             response = openai.ChatCompletion.create(
                 model="gpt-4o",
                 messages=[
-                    {"role": "system", "content": "Eres un asistente experto en detección de colores en cubos de Rubik."},
+                    {"role": "system", "content": "Eres un asistente experto en cubos de Rubik."},
                     {"role": "user", "content": [
                         {"type": "text", "text": 
                             f"Analiza esta imagen y detecta los 9 colores en una cuadrícula 3x3. Devuelve el resultado en JSON con la estructura: "
@@ -419,106 +418,197 @@ def procesar_cubo():
                 temperature=0
             )
 
-            # ✅ Verificar que la respuesta de OpenAI no esté vacía
             if "choices" in response and response["choices"]:
                 content = response["choices"][0]["message"]["content"].strip()
 
                 if content:
                     try:
-                        # ✅ Limpiar JSON antes de decodificarlo
                         content_cleaned = limpiar_json(content)
                         json_response = json.loads(content_cleaned)
 
-                        # ✅ Guardar el resultado con el nombre del archivo como clave
-                        resultados[cara_sin_extension] = json_response[cara_sin_extension]
+                        if cara_sin_extension in json_response:
+                            resultados[cara_sin_extension] = json_response[cara_sin_extension]
+
                     except json.JSONDecodeError:
                         print(f"❌ Error al decodificar JSON para la imagen {cara}")
-                        print(f"Respuesta de OpenAI: {content}")
-                else:
-                    print(f"⚠️ Respuesta vacía para la imagen: {cara}")
-            else:
-                print(f"⚠️ No se recibió una respuesta válida de OpenAI para la imagen: {cara}")
+                        # Si no se pudo procesar la respuesta, usar visión por computadora
+                        colores_detectados = detectar_colores_con_vision(cara)
+                        if colores_detectados:
+                            resultados[cara_sin_extension] = colores_detectados
 
-    # ✅ Retornar el resultado en JSON
+    # ✅ NO USAR `json.dumps()` AQUÍ
+    secuencia_cubo = generar_secuencia_estado(resultados) if resultados else {"secuencia_estado": ""}
 
-    secuencia_cubo=generar_secuencia_estado(resultados)
-
-
+    print(f"✅ SECUENCIA CUBO ENVIADA A rubik.html: {secuencia_cubo}")  # Depuración
 
     return render_template("rubik.html", estado_cubo=resultados, secuencia_cubo=secuencia_cubo)
 
 
+def detectar_colores_con_vision(imagen_path):
+    """
+    Detecta colores en una imagen usando OpenCV. 
+    Devuelve un JSON con la estructura adecuada para los colores detectados en un cubo de Rubik.
+    """
+    # Leer la imagen con OpenCV
+    img = cv2.imread(imagen_path)
+    if img is None:
+       print(f"❌ No se pudo cargar la imagen: {imagen_path}")
+       return None
+    img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    
+   
+
 def encode_image(image_path):
-    """Convierte una imagen a base64 para enviarla a OpenAI."""
-    with open(image_path, "rb") as image_file:
-        return base64.b64encode(image_file.read()).decode("utf-8")
+        """Convierte una imagen a base64 para enviarla a OpenAI."""
+        with open(image_path, "rb") as image_file:
+            return base64.b64encode(image_file.read()).decode("utf-8")
 
-# ✅ Función para limpiar la respuesta JSON de OpenAI
+
+    # ✅ Función para limpiar la respuesta JSON de OpenAI
+
 def limpiar_json(respuesta):
-    """Elimina delimitadores de Markdown en la respuesta JSON de OpenAI."""
-    return re.sub(r"```json|```", "", respuesta).strip()
+        """Elimina delimitadores de Markdown en la respuesta JSON de OpenAI."""
+        return re.sub(r"```json|```", "", respuesta).strip()
 
-# ✅ Ruta para mostrar la página del cubo de Rubik
+    # ✅ Ruta para mostrar la página del cubo de Rubik
 
 
-@main.route('/resolver-cubo', methods=['GET'])
-def resolver_cubo():
-    # Aquí va la lógica para resolver el cubo
-    return "Cubo resuelto"  # O alguna otra acción que quieras hacer
 
 
 def generar_secuencia_estado(jsoncubo):
-    # ✅ Generar la secuencia de colores a partir del estado del cubo
-    secuencia_estado = ""
+        # ✅ Generar la secuencia de colores a partir del estado del cubo
+        secuencia_estado = ""
 
-    # Iterar sobre las claves (caras) del cubo
-    for cara in jsoncubo.keys():
-        if cara in jsoncubo:  # Asegurarnos de que la cara existe
-            for row in jsoncubo[cara]:
-                for color in row:
-                    color_inicial = color[0]  # Obtener la inicial del color
-                    secuencia_estado += color_inicial
+        # Iterar sobre las claves (caras) del cubo
+        for cara in jsoncubo.keys():
+            if cara in jsoncubo:  # Asegurarnos de que la cara existe
+                for row in jsoncubo[cara]:
+                    for color in row:
+                        color_inicial = color[0]  # Obtener la inicial del color
+                        secuencia_estado += color_inicial
 
-    # Devolver el JSON con la secuencia de colores
-    return {"secuencia_estado": secuencia_estado}
+        # Devolver el JSON con la secuencia de colores
+        return {"secuencia_estado": secuencia_estado}
 
-# Definir carpeta de subida
+    # Definir carpeta de subida
 UPLOAD_FOLDER = "app/static/uploads"
 ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png'}
 
-# ✅ Verifica si un archivo tiene una extensión válida
+    # ✅ Verifica si un archivo tiene una extensión válida
 def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+        return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# ✅ Ruta para manejar la subida de imágenes del cubo
+    # ✅ Ruta para manejar la subida de imágenes del cubo
 @main.route('/upload-rubik', methods=['POST'])
 def upload_rubik_images():
-    if 'files[]' not in request.files:
-        return render_template("rubik.html", message="❌ Error: No se enviaron archivos.")
+        if 'files[]' not in request.files:
+            return render_template("rubik.html", estado_cubo="NA",secuencia_cubo="NA")
 
-    files = request.files.getlist('files[]')
+        files = request.files.getlist('files[]')
 
-    if len(files) != 6:
-        return render_template("rubik.html", message="⚠️ Debes subir exactamente 6 imágenes en el orden correcto.")
+        if len(files) != 6:
+            return render_template("rubik.html", message="⚠️ Debes subir exactamente 6 imágenes en el orden correcto.")
 
-    os.makedirs(UPLOAD_FOLDER, exist_ok=True)  # Asegurar que la carpeta exista
+        os.makedirs(UPLOAD_FOLDER, exist_ok=True)  # Asegurar que la carpeta exista
 
-    # **ORDEN OBLIGATORIO** para asignar las caras
+        # **ORDEN OBLIGATORIO** para asignar las caras
 
-    for i, file in enumerate(files):
-        if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)  # Asegura un nombre seguro
-            file_path = os.path.join(UPLOAD_FOLDER,filename)
-            file.save(file_path)
+        for i, file in enumerate(files):
+            if file and allowed_file(file.filename):
+                filename = secure_filename(file.filename)  # Asegura un nombre seguro
+                file_path = os.path.join(UPLOAD_FOLDER,filename)
+                file.save(file_path)
 
-    return render_template("rubik.html", message="✅ Imágenes subidas correctamente. ¡Ahora puedes procesar el cubo!")
+        return render_template("rubik.html", message="✅ Imágenes subidas correctamente.",secuencia_cubo ="na",solucion="na")
+
+import pycuber as pc
+from pycuber.solver import CFOPSolver        
+import json        
+
+@main.route('/resolver-cubo', methods=['POST'])
+def resolver_cubo():
+    try:
+        
+        estado_cubo = request.form.get("secuencia_cubo")
+    
+        # Verificación de que se recibió el estado del cubo
+        if not estado_cubo or estado_cubo.strip() == "":
+            return jsonify({"error": "No se recibió el estado del cubo."}), 400
+
+        # Convertir la secuencia de colores a un diccionario
+        estado_cubo = json.loads(estado_cubo)
+
+        print(f"✅ JSON CONVERTIDO EN resolver_cubo(): {estado_cubo}")  # Depuración
+
+        # Verificar que `estado_cubo` sea un diccionario
+        if not isinstance(estado_cubo, dict):
+            print(f"❌ ERROR: `estado_cubo` NO ES UN DICCIONARIO, ES {type(estado_cubo)}")
+            return jsonify({"error": "Error en la conversión de JSON a diccionario."}), 500
+
+        # Verificar que la clave `secuencia_estado` esté presente en el JSON
+        if "secuencia_estado" not in estado_cubo:
+            return jsonify({"error": "Formato incorrecto en estado_cubo."}), 400
+
+        # Extraer la secuencia de colores
+        secuencia_colores = estado_cubo["secuencia_estado"]
+        print(f"✅ SECUENCIA DE COLORES EXTRAÍDA: {secuencia_colores}")  # Depuración
+
+        # Convertir la secuencia de colores a movimientos de Rubik
+        secuencia_movimientos = convertir_colores_a_movimientos(secuencia_colores)
+
+        # Inicializar el cubo y aplicar los movimientos
+        cubo = pc.Cube()
+        for movimiento in secuencia_movimientos:
+            cubo(movimiento)
+
+        # Resolver el cubo con CFOP Solver
+        solver = CFOPSolver(cubo)
+        solucion = solver.solve()
+
+        # Verificar si se generó una solución
+        print(f"✅ SOLUCIÓN GENERADA: {solucion}")  # Depuración
+
+        # Si no se generó una solución, asignar un mensaje de error
+        if not solucion:
+            solucion = "No se pudo generar una solución válida."
+        
+        
+        solucion = " ".join(map(str, solucion))
+        
+   
+
+        # Redirigir a la página de solución con la solución como parámetro
+        print(f"🔍 SOLUCIÓN PASADA A rubik.html: {(solucion)}")  # Depuración
+        return render_template("rubik.html", secuencia_cubo=estado_cubo, solucion=solucion) 
+
+    except Exception as e:
+        # Manejo de errores generales
+        print(f"❌ ERROR GENERAL EN resolver_cubo(): {str(e)}")  # Depuración
+        return jsonify({"error": f"Error al resolver el cubo: {str(e)}"}), 500
 
 
+def convertir_colores_a_movimientos(secuencia_colores):
+
+    if len(secuencia_colores) != 54:
+        raise ValueError("La secuencia de colores no es válida. Debe contener exactamente 54 caracteres.")
+    caras = ["B", "D", "F", "L", "R", "U"]  # Ajusta este orden si es necesario
+
+    color_cara = {
+        secuencia_colores[4]: "B",  # Cara superior
+        secuencia_colores[13]: "D",  # Cara inferior
+        secuencia_colores[22]: "F",  # Cara frontal
+        secuencia_colores[31]: "L",  # Cara izquierda
+        secuencia_colores[40]: "R",  # Cara derecha
+        secuencia_colores[49]: "U"   # Cara trasera
+    }
+    
+    secuencia_movimientos = []
+    for color in secuencia_colores:
+        if color in color_cara:
+            secuencia_movimientos.append(color_cara[color])
+    
+    return "".join(secuencia_movimientos)
 
 
-
-
-
-
-if __name__=="__main__":
-    app.run(debug_True)
+if __name__ == "__main__":
+    app.run(debug=True)
