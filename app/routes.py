@@ -62,18 +62,26 @@ def borrar_categoria(id):
 def productos():
     categorias = Categoria.query.all()
     if request.method == 'POST':
-            flash("Todos los campos son obligatorios.", "error")
-    else:
         nombre = request.form.get('nombre')
         precio = request.form.get('precio')
         categoria_id = request.form.get('categoria_id')
+
+        # Validaciones antes de insertar en la BD
         if not nombre or not precio or not categoria_id:
-            nuevo_producto = Producto(nombre=nombre, precio=float(precio), categoria_id=int(categoria_id))
-            db.session.add(nuevo_producto)
-            db.session.commit()
-            flash("Producto añadido con éxito.", "success")
+            flash("Todos los campos son obligatorios.", "error")
+        else:
+            try:
+                precio = float(precio)  # Convertir precio a float
+                categoria_id = int(categoria_id)  # Convertir ID a entero
+                nuevo_producto = Producto(nombre=nombre, precio=precio, categoria_id=categoria_id)
+                db.session.add(nuevo_producto)
+                db.session.commit()
+                flash("Producto añadido con éxito.", "success")
+            except ValueError:
+                flash("El precio debe ser un número válido.", "error")
+
     productos = Producto.query.all()
-    return render_template('productos.html', productos=productos, categorias=categorias)
+    return render_template('productos.html', productos=productos, categorias=categorias)     
 
 @main.route('/productos/borrar/<int:id>', methods=['POST'])
 def borrar_producto(id):
