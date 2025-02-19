@@ -3,8 +3,12 @@ from flask import Flask
 from app_db import db
 from app.models import Categoria, Producto, Ciudad  # Importar todas las clases necesarias
 from app.routes import main
+from flask_migrate import Migrate
+from flask_sqlalchemy import SQLAlchemy
+
 import os
 
+migrate=Migrate()
 def create_app():
 
     app = Flask(__name__)
@@ -16,6 +20,7 @@ def create_app():
 
     # Inicializar extensiones
     db.init_app(app)
+    migrate.init_app(app, db)
 
     # Insertar datos de ejemplo si no existen
     with app.app_context():

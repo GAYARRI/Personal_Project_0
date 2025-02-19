@@ -3,27 +3,28 @@
 {% block title %}Resumen{% endblock %}
 
 {% block content %}
-<h1>Resumen por Categorías</h1>
-<table border="1">
-    <thead>
-        <tr>
-            <th>Categoría</th>
-            <th>Total Productos</th>
-            <th>Suma de Precios</th>
-            <th>Promedio de Precios</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for row in resumen %}
-        <tr>
-            <td>{{ row[0] }}</td>
-            <td>{{ row[1] }}</td>
-            <td>{{ row[2] }}</td>
-            <td>{{ row[3] }}</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>Categoría</th>
+                <th>Total Productos</th>
+                <th>Suma de Precios</th>
+                <th>Promedio de Precios</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in resumen %}
+            <tr>
+                <td>{{ row[0] }}</td>
+                <td>{{ row[1] }}</td>
+                <td>{{ row[2] }}</td>
+                <td>{{ row[3] }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
 
 <!-- Enlace para regresar a la página principal -->
 <a href="{{ url_for('main.home') }}">Volver al inicio</a>

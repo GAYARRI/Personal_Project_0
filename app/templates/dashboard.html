@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard de Compras{% endblock %}
+
+{% block content %}
+<h1>Dashboard de Compras</h1>
+
+<!-- Gráfico 1: Compra Media por Categoría -->
+<h2>Compra Media por Categoría</h2>
+<img src="data:image/png;base64,{{ img_categoria }}" alt="Compra por Categoría">
+
+<!-- Gráfico 2: Compra Media por Provincia -->
+<h2>Compra Media por Provincia</h2>
+<img src="data:image/png;base64,{{ img_provincia }}" alt="Compra por Provincia">
+
+<!-- Gráfico 3: Compra Promedio por Día -->
+<h2>Compra Promedio por Día</h2>
+<img src="data:image/png;base64,{{ img_fecha }}" alt="Compra por Día">
+
+<a href="{{ url_for('main.home') }}">Volver al inicio</a>
+{% endblock %}

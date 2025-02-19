@@ -120,3 +120,26 @@ th {
     color: #721c24;
     border: 1px solid #f5c6cb;
 }
+.table-container {
+    width: 50%;  /* 🔹 La tabla ocupará el 50% del ancho */
+    margin: auto;  /* 🔹 Centra la tabla en la pantalla */
+    text-align: center;  /* 🔹 Centra el texto dentro de las celdas */
+}
+
+.table-container table {
+    width: 100%;  /* 🔹 La tabla se ajusta al contenedor */
+    border-collapse: collapse;  /* 🔹 Unifica los bordes */
+    background-color: #ffffff;  /* 🔹 Fondo blanco */
+}
+
+.table-container th, .table-container td {
+    border: 1px solid #ddd;  /* 🔹 Bordes ligeros */
+    padding: 10px;  /* 🔹 Espaciado interno */
+    text-align: left;  /* 🔹 Alinear texto a la izquierda */
+}
+
+.table-container th {
+    background-color: #f2f2f2;  /* 🔹 Fondo para encabezados */
+    font-weight: bold;  /* 🔹 Texto en negrita */
+}
+

@@ -1,0 +1,30 @@
+[33me252373[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m again
+[33ma8b7d8d[m[33m ([m[1;31morigin/main[m[33m)[m Kick-off Ampliacion gestión de BBDD
+[33maa031d3[m[33m ([m[1;31morigin/cv[m[33m, [m[1;32mcv[m[33m)[m FIN A CUBO_RUBIK : Mejoras en deteccion de color y Resolucion Cubo
+[33mc9d87ba[m Subida de archivos y procesamiento/lectura de la secuencia correcta del cubo
+[33m5dfabd6[m version2de las ultimas
+[33m3e529aa[m again el anterior commit
+[33m8bd378f[m Procesado de colores mas fiable
+[33m7b3d7e4[m  Segundo restiling
+[33ma20da37[m arregos de stylo y logos
+[33m612d619[m REPO FUNCIONAL IMAGENES BBDD VIAJANTE CUBO(SUBIR_ARCHIVOS / GENERAR_JSON_IMPUT)
+[33mf4408ad[m  Segundo intento
+[33md5745b0[m Habilitada subida de 6 imagenes del cubo a resolver . Generado imput de algoritmo de resolucion
+[33m427c61e[m Preparativos iniciales para funcionalidad CuboR
+[33m173bf0f[m Estado Operativo : Images/BBDD/Viajante . Funcionalidades para publicar imagen en Docker-Kubernetes
+[33m1096ddd[m Subida produccion de mi app
+[33m42b2fd9[m COMPROBACION FINAL
+[33m2710d74[m 'Akgoritmo Heruristico implementado y Viuslizacion Ruta Optima. Final_Projecto'
+[33m15904a9[m Calculo de ruta heurística y Visualizacion de Resutados Finales
+[33mff28f8b[m Consolidar cambios en la rama añadir_tsp: 2 moddulos bbdd e imagenes Operativos 100% , TSP matriz imput lista
+[33m1b55394[m Corregido flujo de generación de imágenes y funcionalidad TSP completada
+[33m5bce5db[m Generamos mapa y matriz de distancias de las ciudades seleccionada para el problema del TSP con 15 ciudades
+[33m5af7952[m Tamaño de imagen a 512 x 512
+[33m6f0b688[m Tamaño de imagen a 512 x 512
+[33m121873b[m Añadida funcionalidad de generación de imágenes con spinner y bbdd multitabla
+[33mc02aaa8[m Formulario demo para insercion, visualizacion y borrado de registros en una bbdd local . Integración de generación de imágenes con DALL-E
+[33m66769cb[m Versión estable con modulos funcionales de inserción y borrado desde formulario a la bbdd local
+[33m597ead7[m Apertura de puertos de acceso a la aplicacion Flask
+[33mc075f48[m Cambiamos el sistema de inserciom de registros : a traves de csv que sobreescribe la basse de datos
+[33ma5b3f5a[m Primera versión funcional del proyecto
+[33m3f9e1b4[m Initial commit

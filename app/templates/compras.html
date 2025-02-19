@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}Compras{% endblock %}
+
+{% block content %}
+<h1>Historial de Compras</h1>
+
+<!-- Formulario para agregar una nueva compra -->
+<h2>Añadir Nueva Compra</h2>
+<form method="POST" action="{{ url_for('main.agregar_compra') }}">
+    <label for="producto_id">Producto:</label>
+    <select name="producto_id" required>
+        {% for producto in productos %}
+        <option value="{{ producto.id }}">{{ producto.nombre }}</option>
+        {% endfor %}
+    </select>
+
+    <label for="cliente_id">Comprador:</label>
+    <select name="cliente_id" required>
+        {% for cliente in clientes %}
+        <option value="{{ cliente.id }}">{{ cliente.nombre }} {{ cliente.apellidos }}</option>
+        {% endfor %}
+    </select>
+
+    <label for="unidades_peso">Unidades/Peso:</label>
+    <input type="number" step="0.01" name="unidades_peso" required>
+
+    <label for="fecha">Fecha:</label>
+    <input type="date" name="fecha" required>
+
+    <label for="provincia_compra">Provincia de Compra:</label>
+    <input type="text" name="provincia_compra" required>
+
+    <button type="submit">Añadir Compra</button>
+</form>
+
+<!-- Tabla de compras existentes -->
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Producto</th>
+                <th>Comprador</th>
+                <th>Unidades/Peso</th>
+                <th>Fecha</th>
+                <th>Provincia</th>
+                <th>Acciones</th>  <!-- Nueva columna para botones de borrar -->
+            </tr>
+        </thead>
+        <tbody>
+            {% for compra in compras %}
+            <tr>
+                <td>{{ compra.id }}</td>
+                <td>{{ compra.producto.nombre }}</td>
+                <td>{{ compra.cliente.nombre }} {{ compra.cliente.apellidos }}</td>
+                <td>{{ compra.unidades_peso }}</td>
+                <td>{{ compra.fecha.strftime('%Y-%m-%d') }}</td>
+                <td>{{ compra.provincia_compra }}</td>
+                <td>
+                    <form method="POST" action="{{ url_for('main.borrar_compra', id=compra.id) }}" onsubmit="return confirm('¿Estás seguro de que deseas eliminar esta compra?');">
+                        <button type="submit" style="background-color: red; color: white; border: none; padding: 5px 10px; cursor: pointer;">🗑 Borrar</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<a href="{{ url_for('main.home') }}">Volver al inicio</a>
+{% endblock %}

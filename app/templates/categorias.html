@@ -23,26 +23,28 @@
 </form>
 
 <!-- Tabla de categorías existentes -->
-<table border="1">
-    <thead>
-        <tr>
-            <th>ID</th>
-            <th>Nombre</th>
-            <th>Acciones</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for categoria in categorias %}
-        <tr>
-            <td>{{ categoria.id }}</td>
-            <td>{{ categoria.nombre }}</td>
-            <td>
-                <form method="POST" action="{{ url_for('main.borrar_categoria', id=categoria.id) }}">
-                    <button type="submit">Borrar</button>
-                </form>
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for categoria in categorias %}
+            <tr>
+                <td>{{ categoria.id }}</td>
+                <td>{{ categoria.nombre }}</td>
+                <td>
+                    <form method="POST" action="{{ url_for('main.borrar_categoria', id=categoria.id) }}">
+                        <button type="submit">Borrar</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
 {% endblock %}

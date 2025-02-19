@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, Flask
 from flask import jsonify,flash
-from app.models import Categoria, Producto, Ciudad
+from app.models import Categoria, Producto, Ciudad, Cliente, Compra
 from app_db import db
 import os # Para leer variables de entorno
 import requests
@@ -23,6 +23,10 @@ from skimage.color import rgb2lab
 from PIL import Image
 from io import BytesIO
 import re
+import pandas as pd
+import matplotlib.pyplot as plt
+import base64
+import io
 
 
 
@@ -33,6 +37,43 @@ UPLOAD_FOLDER = "app/static/uploads"
 
 
 main = Blueprint('main', __name__)
+
+
+# Getion de Compras
+@main.route('/compras', methods=['GET'])
+def compras():
+    compras = Compra.query.all()
+    return render_template('compras.html', compras=compras)
+
+
+@main.route('/agregar_compra', methods=['POST'])
+def agregar_compra():
+    producto_id = request.form.get('producto_id')
+    cliente_id = request.form.get('cliente_id')
+    unidades_peso = request.form.get('unidades_peso')
+    fecha = request.form.get('fecha')
+    provincia_compra = request.form.get('provincia_compra')
+
+    if not producto_id or not cliente_id or not unidades_peso or not fecha or not provincia_compra:
+        flash("Todos los campos son obligatorios.", "error")
+        return redirect(url_for('main.compras'))
+
+    try:
+        nueva_compra = Compra(
+            producto_id=int(producto_id),
+            cliente_id=int(cliente_id),
+            unidades_peso=float(unidades_peso),
+            fecha=datetime.strptime(fecha, '%Y-%m-%d'),
+            provincia_compra=provincia_compra
+        )
+        db.session.add(nueva_compra)
+        db.session.commit()
+        flash("Compra añadida con éxito.", "success")
+    except ValueError:
+        flash("Error en los datos ingresados.", "error")
+
+    return redirect(url_for('main.compras'))
+
 
 # Gestión de categorías
 @main.route('/categorias', methods=['GET', 'POST'])
@@ -81,7 +122,7 @@ def productos():
                 flash("El precio debe ser un número válido.", "error")
 
     productos = Producto.query.all()
-    return render_template('productos.html', productos=productos, categorias=categorias)     
+    return render_template('productos.html', productos=productos, categorias=categorias)   
 
 @main.route('/productos/borrar/<int:id>', methods=['POST'])
 def borrar_producto(id):
@@ -90,6 +131,47 @@ def borrar_producto(id):
     db.session.commit()
     flash("Producto eliminado con éxito.", "success")
     return redirect(url_for('main.productos'))
+
+# 📌 Ruta para ver clientes
+@main.route('/clientes', methods=['GET'])
+def clientes():
+    clientes = Cliente.query.all()
+    return render_template('clientes.html', clientes=clientes)
+
+# 📌 Ruta para agregar un cliente
+@main.route('/clientes', methods=['POST'])
+def agregar_cliente():
+    nombre = request.form.get('nombre')
+    apellidos = request.form.get('apellidos')
+    direccion = request.form.get('direccion')
+    provincia = request.form.get('provincia')
+    edad = request.form.get('edad')
+
+    if not nombre or not apellidos or not direccion or not provincia or not edad:
+        flash("Todos los campos son obligatorios.", "error")
+    else:
+        try:
+            edad = int(edad)
+            nuevo_cliente = Cliente(
+                nombre=nombre, apellidos=apellidos, 
+                direccion=direccion, provincia=provincia, edad=edad
+            )
+            db.session.add(nuevo_cliente)
+            db.session.commit()
+            flash("Cliente añadido con éxito.", "success")
+        except ValueError:
+            flash("La edad debe ser un número válido.", "error")
+
+    return redirect(url_for('main.clientes'))
+
+# 📌 Ruta para eliminar un cliente
+@main.route('/clientes/borrar/<int:id>', methods=['POST'])
+def borrar_cliente(id):
+    cliente = Cliente.query.get_or_404(id)
+    db.session.delete(cliente)
+    db.session.commit()
+    flash("Cliente eliminado con éxito.", "success")
+    return redirect(url_for('main.clientes'))
 
 # Resumen por categorías
 @main.route('/resumen', methods=['GET'])
@@ -108,6 +190,67 @@ def home():
 
 app = Flask(__name__)
 openai.api_key = os.getenv('OPENAI_API_KEY')
+
+
+@main.route('/dashboard')
+def dashboard():
+    # Obtener datos de la base de datos
+    compras = Compra.query.all()
+
+    # Convertir datos a un DataFrame de Pandas
+    data = [
+        {
+            "categoria": compra.producto.categoria.nombre,
+            "provincia": compra.provincia_compra,
+            "fecha": compra.fecha.strftime('%Y-%m-%d'),
+            "unidades_peso": compra.unidades_peso
+        }
+        for compra in compras
+    ]
+
+    df = pd.DataFrame(data)
+
+    # 📊 1️⃣ Compra Media Totalizada por Categoría
+    df_categoria = df.groupby("categoria")["unidades_peso"].mean()
+    img_categoria = plot_to_base64(df_categoria, "Compra Media por Categoría", "Categoría", "Compra Media (kg/unidades)")
+
+    # 📊 2️⃣ Compra Media Totalizada por Provincia
+    df_provincia = df.groupby("provincia")["unidades_peso"].mean()
+    img_provincia = plot_to_base64(df_provincia, "Compra Media por Provincia", "Provincia", "Compra Media (kg/unidades)")
+
+    # 📊 3️⃣ Compra Promedio por Día
+    df_fecha = df.groupby("fecha")["unidades_peso"].mean()
+    df_fecha = df_fecha.iloc[::7]  # 🔹 Toma solo cada 7 días
+
+    img_fecha = plot_to_base64(df_fecha, "Compra Promedio por Día", "Fecha", "Compra Media (kg/unidades)")
+
+    return render_template('dashboard.html',
+                           img_categoria=img_categoria,
+                           img_provincia=img_provincia,
+                           img_fecha=img_fecha)
+
+
+def plot_to_base64(df, title, xlabel, ylabel):
+    """Genera un gráfico y lo convierte en una imagen base64 para incrustar en HTML."""
+    plt.figure(figsize=(8, 4))
+    df.plot(kind="bar", color="skyblue", edgecolor="black")
+    plt.title(title)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+
+    # Convertir a imagen base64
+    img = io.BytesIO()
+    plt.savefig(img, format='png')
+    img.seek(0)
+    plt.close()
+
+    return base64.b64encode(img.getvalue()).decode('utf-8')
+
+
+
+
 
 # Ruta para generar imágenes
 @main.route('/generate-image', methods=['POST'])

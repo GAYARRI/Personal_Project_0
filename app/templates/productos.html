@@ -29,32 +29,35 @@
 </form>
 
 <!-- Tabla de productos -->
-<table border="1">
-    <thead>
-        <tr>
-            <th>ID</th>
-            <th>Nombre</th>
-            <th>Precio</th>
-            <th>Categoría</th>
-            <th>Acciones</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for producto in productos %}
-        <tr>
-            <td>{{ producto.id }}</td>
-            <td>{{ producto.nombre }}</td>
-            <td>{{ producto.precio }}</td>
-            <td>{{ producto.categoria.nombre }}</td>
-            <td>
-                <form method="POST" action="{{ url_for('main.borrar_producto', id=producto.id) }}">
-                    <button type="submit">Borrar</button>
-                </form>
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Precio Ud/Kg</th>
+                <th>Categoría</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for producto in productos %}
+            <tr>
+                <td>{{ producto.id }}</td>
+                <td>{{ producto.nombre }}</td>
+                <td>{{ producto.precio }}</td>
+                <td>{{ producto.categoria.nombre }}</td>
+                <td>
+                    <form method="POST" action="{{ url_for('main.borrar_producto', id=producto.id) }}">
+                        <button type="submit">Borrar</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
 
 <!-- Enlace para regresar a la página principal -->
 <a href="{{ url_for('main.home') }}">Volver al inicio</a>

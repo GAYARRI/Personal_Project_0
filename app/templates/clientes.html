@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Clientes{% endblock %}
+
+{% block content %}
+<h1>Gestión de Clientes</h1>
+
+<!-- Mostrar mensajes flash -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <ul class="flashes">
+        {% for category, message in messages %}
+        <li class="{{ category }}">{{ message }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+{% endwith %}
+
+<!-- Formulario para añadir clientes -->
+<form method="POST" action="{{ url_for('main.clientes') }}">
+    <input type="text" name="nombre" placeholder="Nombre" required>
+    <input type="text" name="apellidos" placeholder="Apellidos" required>
+    <input type="text" name="direccion" placeholder="Dirección" required>
+    <input type="text" name="provincia" placeholder="Provincia" required>
+    <input type="number" name="edad" placeholder="Edad" required>
+    <button type="submit">Añadir Cliente</button>
+</form>
+
+<!-- Tabla de clientes existentes -->
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Apellidos</th>
+                <th>Dirección</th>
+                <th>Provincia</th>
+                <th>Edad</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for cliente in clientes %}
+            <tr>
+                <td>{{ cliente.id }}</td>
+                <td>{{ cliente.nombre }}</td>
+                <td>{{ cliente.apellidos }}</td>
+                <td>{{ cliente.direccion }}</td>
+                <td>{{ cliente.provincia }}</td>
+                <td>{{ cliente.edad }}</td>
+                <td>
+                    <form method="POST" action="{{ url_for('main.borrar_cliente', id=cliente.id) }}">
+                        <button type="submit">Borrar</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<!-- Enlace para regresar a la página principal -->
+<a href="{{ url_for('main.home') }}">Volver al inicio</a>
+{% endblock %}
