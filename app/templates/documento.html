@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="es">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}?v=3"
+<header>
+        <button onclick="window.location.href='/'">Inicio</button>
+        <img src="{{ url_for('static', filename='img/jarg2.png') }}" class="imagen-circular"><br><br>
+</header>    
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documento</title>
+</head>
+<body>
+    <h1>What's the story ?...</h1>
+    <div><pre>{{ contenido | safe }}</pre></div>
+</body>
+</html>
+

@@ -1,46 +1,46 @@
 {% extends "base.html" %}
 {% block content %}
     <header>
-        <ul><li><a href="/">Story_Telling</a></li></ul>
-        <h2>Demo portfolio funcionalidades asistidas por IA</h2> 
+        <ul><li><a href="{{ url_for('main.ver_documento') }}">Story_Telling</a></li></ul>
+        <h2>Functionalities IA aided</h2> 
         <div>
             <h3>1.- Operations Research Corner</h3>
             <ul>
-                <li><a href="/tsp">1.- Problema del Viajante</a></li>
+                <li><a href="/tsp">1.- Traveler Salesman Problem</a></li>
             </ul>
         </div>
         <div>
-            <h3>2.- Interacción con BBDD Local</h3>
+            <h3>2.- Local Database Management</h3>
             <ul>
-                <li><a href="{{ url_for('main.categorias') }}">Gestionar Categorías</a></li>
-                <li><a href="{{ url_for('main.productos') }}">Gestionar Productos</a></li>
-                <li><a href="{{ url_for('main.clientes') }}">Gestionar Clientes</a></li>
-                <li><a href="{{ url_for('main.compras') }}">Gestionar Compras</a></li>
-                <li><a href="{{ url_for('main.resumen') }}">Ver Resumen</a></li>
-                <li><a href="{{ url_for('main.dashboard') }}">Ver dashboard</a></li>
+                <li><a href="{{ url_for('main.categorias') }}">Categories</a></li>
+                <li><a href="{{ url_for('main.productos') }}">Articles</a></li>
+                <li><a href="{{ url_for('main.clientes') }}">Clients</a></li>
+                <li><a href="{{ url_for('main.compras') }}">Sales</a></li>
+                <li><a href="{{ url_for('main.resumen') }}">Resume</a></li>
+                <li><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
             </ul>
         </div>
         <div>
-            <h3>3.- Generación de Imágenes @ DALL-E</h3>
+            <h3>3.- Images Generating with @ DALL-E</h3>
             <form method="POST" action="{{ url_for('main.generate_image') }}" onsubmit="mostrarCargando()">
-                <label for="prompt">Introduce el prompt para la imagen:</label>
+                <label for="prompt">Describe your image:</label>
                 <input type="text" id="prompt" name="prompt" required>
-                <button type="submit">Generar Imagen</button>
+                <button type="submit">Generate</button>
             </form>
             <div id="spinner" style="display: none; text-align: center;">
-                <p>Generando imagen...</p>
+                <p>Working on progress...</p>
                 <div class="spinner"></div>
             </div>
             {% if imagen_url %}
             <div>
-                <h3>Imagen generada:</h3>
-                <img src="{{ imagen_url }}" alt="Imagen generada por DALL-E">
+                <h3>Image:</h3>
+                <img src="{{ imagen_url }}" alt="DALL-E Image Generated">
             </div>
             {% endif %}
         </div>
         <div>
             <h3>4.- Computer Vision (GPT.4o + CV)</h3>
-            <li><a href="/rubik"> Cubo de Rubik</a></li>
+            <li><a href="/rubik"> Rubik's cube</a></li>
         </div>
     </header>
 {% endblock %}

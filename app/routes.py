@@ -26,6 +26,7 @@ import re
 import pandas as pd
 import matplotlib.pyplot as plt
 import base64
+from docx import Document
 import io
 
 
@@ -190,6 +191,10 @@ def home():
 
 app = Flask(__name__)
 openai.api_key = os.getenv('OPENAI_API_KEY')
+
+@main.route("/documento")
+def documento():
+    return render_template("documento.html")
 
 
 @main.route('/dashboard')
@@ -759,6 +764,20 @@ def convertir_colores_a_movimientos(secuencia_colores):
             secuencia_movimientos.append(color_cara[color])
     
     return "".join(secuencia_movimientos)
+
+docx_filename="Gracias.docx"
+docx_path=os.path.join(os.getcwd(), "app", "static","uploads", docx_filename)
+
+
+@main.route("/ver-documento")
+def ver_documento():
+    with open("Gracias_.txt", "r", encoding="utf-8") as file:
+        contenido = file.read()
+    
+    return render_template("documento.html", contenido=contenido)
+
+
+
 
 
 if __name__ == "__main__":
