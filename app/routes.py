@@ -75,6 +75,18 @@ def agregar_compra():
 
     return redirect(url_for('main.compras'))
 
+@main.route('/compras/borrar/<int:id>', methods=['POST'])
+def borrar_compra(id):
+    compra = Compra.query.get_or_404(id)  # 🔹 Obtiene la compra o devuelve error 404 si no existe
+    db.session.delete(compra)
+    db.session.commit()
+    flash("Compra eliminada con éxito.", "success")
+    return redirect(url_for('main.compras'))
+
+
+
+
+
 
 # Gestión de categorías
 @main.route('/categorias', methods=['GET', 'POST'])
@@ -775,7 +787,6 @@ def ver_documento():
         contenido = file.read()
     
     return render_template("documento.html", contenido=contenido)
-
 
 
 
