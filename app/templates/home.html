@@ -2,28 +2,46 @@
 {% block content %}
     <header>
         <ul><li><a href="{{ url_for('main.ver_documento') }}">Story_Telling</a></li></ul>
-        <h2>Functionalities IA aided</h2> 
+        
+        <h1 class="primera">Functionalities IA aided</h1> 
+        <style>
+            .alineado {
+                display: inline;
+                margin-left: 400px;
+            }
+            .primera {
+                l
+                display: inline;
+                margin-left: 175px;
+                line-height: 3;
+                text-decoration-line: underline;
+                
+            }
+        </style>
         <div>
-            <h3>1.- Operations Research Corner</h3>
+            <h3 class="alineado">1.- Operations Research Corner</h3>
+            
             <ul>
                 <li><a href="/tsp">1.- Traveler Salesman Problem</a></li>
             </ul>
         </div>
         <div>
-            <h3>2.- Local Database Management</h3>
+            <h3 class="alineado">2.- Local Database Management</h3>
             <ul>
-                <li><a href="{{ url_for('main.categorias') }}">Categories</a></li>
-                <li><a href="{{ url_for('main.productos') }}">Articles</a></li>
-                <li><a href="{{ url_for('main.clientes') }}">Clients</a></li>
-                <li><a href="{{ url_for('main.compras') }}">Sales</a></li>
-                <li><a href="{{ url_for('main.resumen') }}">Resume</a></li>
-                <li><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+                <li><a href="{{ url_for('main.categorias') }}">2.1-Categories</a></li>
+                <li><a href="{{ url_for('main.productos') }}">2.2.-Articles</a></li>
+                <li><a href="{{ url_for('main.clientes') }}">2.3.-Clients</a></li>
+                <li><a href="{{ url_for('main.compras') }}">2.4.-Sales</a></li>
+                <li><a href="{{ url_for('main.resumen') }}">2.5.-Resume</a></li>
+                <li><a href="{{ url_for('main.dashboard') }}">2.6.-Dashboard</a></li>
             </ul>
         </div>
         <div>
-            <h3>3.- Images Generating with @ DALL-E</h3>
+            <h3 class="alineado">3.- Images Generating with @ DALL-E</h3>
             <form method="POST" action="{{ url_for('main.generate_image') }}" onsubmit="mostrarCargando()">
-                <label for="prompt">Describe your image:</label>
+                <ul>
+                    <li><label for="prompt">3.1-Describe your image:</label></li>
+                </ul>    
                 <input type="text" id="prompt" name="prompt" required>
                 <button type="submit">Generate</button>
             </form>
@@ -39,12 +57,16 @@
             {% endif %}
         </div>
         <div>
-            <h3>4.- Computer Vision (GPT.4o + CV)</h3>
-            <li><a href="/rubik"> Rubik's cube</a></li>
+            <h3 class="alineado">4.- Computer Vision (GPT.4o + CV)</h3>
+            <ul>
+                <li><a href="/rubik">4.1.-Rubik's cube</a></li>
+            </ul>    
         </div>
         <div>
-            <h3>5.- ChatBot_Operations Research(@LangChain)</h3>
-            <a href="http://localhost:8501" target="_blank">Ir al Chatbot</a>
+            <h3 class ="alineado">5.- ChatBot_Operations Research(@LangChain)</h3>
+            <ul>
+                <li><a href="http://92.189.99.29:8501" target="_blank">5.1.-Ir al Chatbot</a></li>
+            </ul>    
 
 
         </div>

@@ -21,111 +21,98 @@ from dotenv import load_dotenv
 import warnings
 
 
-warnings.filterwarnings("ignore", category=DeprecationWarning)
-
-load_dotenv()
 
 # Obtener API Key y entorno
 PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
 PINECONE_ENVIRONMENT = os.getenv("PINECONE_ENVIRONMENT")
-
-# Inicializar Pinecone correctamente
-pc = Pinecone(api_key=PINECONE_API_KEY)
+INDEX_NAME = "operations-research"
 
 
 
-# Verificar que la API Key y el entorno están configurados
-if not PINECONE_API_KEY:
-    raise ValueError("La API Key de Pinecone no está configurada.")
-###if not PINECONE_ENVIRONMENT:
-###    raise ValueError("El entorno de Pinecone no está configurado.")
+# Inicializar modelo de embeddings y LLM
+embedding = OpenAIEmbeddings()
+llm = ChatOpenAI(model_name="gpt-4", temperature=0.1)
 
-# Nombre del índice
-index_name = "operations-research"
-
-# Asegurar que `pc` está inicializado antes de llamarlo
-if index_name not in pc.list_indexes().names():
-    pc.create_index(
-        name=index_name,
-        dimension=1536,  # Ajusta la dimensión según el modelo de embeddings
-        metric='euclidean',
-        spec=ServerlessSpec(
-            cloud='aws',  # Usa 'gcp' en el plan gratuito
-            region='us-east1'  # Región compatible con el plan gratuito
-        )
-    )
-
-index = pc.Index(index_name)  # ✅ CORRECTO: Inicializar el índice correctamente
-# Definir el modelo de embeddings
-embedding = OpenAIEmbeddings()  # ✅ Ahora 'embedding' está definido
-
-vectorstore = PineconeVectorStore.from_existing_index(index_name, embedding)  # ✅ CORRECTO
-
-
-
-
-
-
-# Cargar documentos desde un directorio y procesarlos
-def load_documents_from_directory(directory: str):
+# 🔹 Cargar documentos solo una vez
+@st.cache_resource
+def load_documents(directory: str):
+    """Carga y divide documentos PDF en fragmentos procesables."""
     documents = []
-    pdf_files = glob.glob(os.path.join(directory, "*.pdf"))
+    pdf_files = [os.path.join(directory, f) for f in os.listdir(directory) if f.endswith(".pdf")]
+
+    if not pdf_files:
+        raise FileNotFoundError("❌ No se encontraron archivos PDF en el directorio.")
+
     for pdf_file in pdf_files:
-        print(f"📖 Cargando documento: {os.path.basename(pdf_file)}") 
         loader = PyPDFLoader(pdf_file)
         docs = loader.load()
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
         texts = text_splitter.split_documents(docs)
         documents.extend(texts)
-    print(f"✅ Total de fragmentos procesados: {len(documents)}")    
+
     return documents
 
-# Crear e indexar la base de conocimiento en Pinecone
-embedding = OpenAIEmbeddings()
+# Ruta de documentos (¡Cambia esto a tu ruta real!)
+DOCUMENTS_PATH = "C:/Users/gayar/Personal_Project/Documentos_Rag"
+documents = load_documents(DOCUMENTS_PATH)
 
-retriever = vectorstore.as_retriever()
+# 🔹 Inicializar Pinecone solo una vez
+@st.cache_resource
+def get_vectorstore():
+    """Carga o crea el vectorstore en Pinecone."""
+    pc = Pinecone(api_key=PINECONE_API_KEY)
+    
+    if INDEX_NAME not in pc.list_indexes().names():
+        pc.create_index(
+            name=INDEX_NAME,
+            dimension=1536,
+            metric="euclidean",
+            spec=ServerlessSpec(
+                cloud="aws",
+                region="eu-east1"
+            )
+        )
 
-# Configurar modelo y QA Chain
-llm = ChatOpenAI(model_name="gpt-4", temperature=0.1)
-qa_chain = RetrievalQA.from_chain_type(llm, retriever=retriever)
+    return PineconeVectorStore.from_existing_index(INDEX_NAME, embedding)
 
-# Configurar memoria para chat
-memory = ConversationBufferMemory(return_messages=True)
+vectorstore = get_vectorstore()
 
+# 🔹 Crear la cadena de búsqueda en documentos
+qa_chain = RetrievalQA.from_chain_type(llm=llm, retriever=vectorstore.as_retriever())
 
-base_directory = "C:/Users/gayar/Personal_Project"
-directory_path = os.path.join(base_directory, "Documentos_Rag")
-documents = load_documents_from_directory(directory_path)
+# 🔹 Crear herramienta de búsqueda
+retrieval_tool = Tool(
+    name="Research Retriever",
+    func=qa_chain.run,
+    description="Busca información en la base de datos de investigación de operaciones."
+)
 
+# Verificar que la herramienta se haya creado correctamente
+if retrieval_tool is None:
+    raise ValueError("❌ La herramienta de búsqueda no se ha inicializado correctamente.")
 
+# Lista de herramientas (debe contener al menos una)
+tools = [retrieval_tool]
+if not tools:
+    raise ValueError("❌ No hay herramientas en la lista, el agente no podrá funcionar.")
 
-# Herramienta para resolver problemas matemáticos
-def solve_math_problem(problem: str):
-    try:
-        from sympy import sympify
-        return str(sympify(problem).evalf())
-    except Exception as e:
-        return f"Error al resolver el problema: {str(e)}"
+# 🔹 Crear memoria del chatbot
+memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
 
-math_tool = Tool(name="Math Solver", func=solve_math_problem, description="Resuelve problemas matemáticos básicos.")
-
-# Crear agente con herramientas
+# 🔹 Inicializar el agente con herramientas
 agent = initialize_agent(
-    tools=[math_tool],
+    tools=tools,
     llm=llm,
     agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+    verbose=True,
     memory=memory
 )
 
+# 🔹 Interfaz en Streamlit
+st.title("🤖 Hillier/Lieberman Corner")
 
-# Interfaz en Streamlit
-st.title("OR Courseware")
-user_input = st.text_input("What's your question:")
+user_input = st.text_input("✍️ What question do you have ? :")
 
 if user_input:
-    if "resolver" in user_input.lower():
-        response = agent.run(user_input)
-    else:
-        response = qa_chain.run(user_input)
+    response = agent.run(user_input)  # ✅ Ahora el agente tiene herramientas y memoria
     st.write(response)
-
