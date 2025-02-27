@@ -273,6 +273,8 @@ def plot_to_base64(df, title, xlabel, ylabel):
 @main.route('/generate-image', methods=['POST'])
 def generate_image():
 
+
+
     try:
         # Obtener el prompt del formulario
         prompt = request.form.get('prompt', '').strip()
@@ -280,59 +282,26 @@ def generate_image():
             return jsonify({'error': 'El campo de descripción está vacío.'}), 400
 
         # Solicitar la generación de la imagen usando ChatCompletion
-        response = openai.ChatCompletion.create(
-            model="gpt-4",
-            messages=[
-                {"role": "system", "content": "Eres un generador de imágenes."},
-                {"role": "user", "content": f"Genera una imagen basada en el siguiente texto: {prompt}"}
-            ],
-            functions=[
-                {
-                    "name": "generate_image",
-                    "description": "Generar imágenes con DALL-E",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "prompt": {"type": "string", "description": "Texto descriptivo para la imagen."},
-                            "n": {"type": "integer", "description": "Número de imágenes a generar.", "default": 1},
-                            "size": {
-                                "type": "string",
-                                "description": "Tamaño de la imagen, e.g., '1024x1024'.",
-                                "default": "1024x1024"
-                            }
-                        },
-                        "required": ["prompt"]
-                    }
-                }
-            ]
-        )
+        
 
-        # Verificar si el modelo devolvió una llamada a la función
-        function_call = response.get("choices", [{}])[0].get("message", {}).get("function_call")
-        if not function_call or function_call.get("name") != "generate_image":
-            raise ValueError("La respuesta del modelo no contiene una llamada a 'generate_image'.")
+        response = openai.Image.create(
+              model="dall-e-3",
+              size="1024x1024",
+              prompt=prompt,
+              quality="hd",
+              n=1,
+)
 
-        # Extraer los argumentos de la función
-        arguments = json.loads(function_call.get("arguments", "{}"))
-        prompt_for_image = arguments.get("prompt", prompt)
-        n = arguments.get("n", 1)
-        size = arguments.get("size", "1024x1024")
-
-        # Solicitar la imagen a la API de DALL-E
-        image_response = openai.Image.create(
-            prompt=prompt_for_image,
-            n=n,
-            size=size
-        )
+      
 
         # Obtener la URL de la imagen generada
-        image_url = image_response['data'][0]['url']
+        image_url = response.data[0].url
+
 
         # Renderizar el resultado
         return render_template('image_result.html', image_url=image_url, home_url=url_for('main.home'))
 
-        
-
+    
 
     except Exception as e:
         print(f"Error generando la imagen: {e}")
@@ -570,7 +539,7 @@ def procesar_cubo():
 
         if os.path.isfile(ruta_completa):
             image_base64 = encode_image(ruta_completa)
-
+            
             # Llamada a ChatGPT para el reconocimiento de colores
             response = openai.ChatCompletion.create(
                 model="gpt-4o",
