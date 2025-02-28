@@ -1,39 +1,53 @@
 import streamlit as st
 import os
-import glob
+import json
 from pinecone import Pinecone, ServerlessSpec
 from langchain_community.chat_models import ChatOpenAI
-from langchain.chains import RetrievalQA  # ✅ Importación correct0
-from langchain_openai import OpenAIEmbeddings  # ✅ CORRECTO
-from langchain_openai import ChatOpenAI  # ✅ CORRECTO
-from langchain_pinecone import PineconeVectorStore  # ✅ CORRECTO
-
-
+from langchain.chains import RetrievalQA
+from langchain_openai import OpenAIEmbeddings, ChatOpenAI
+from langchain_pinecone import PineconeVectorStore
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain.memory import ConversationBufferMemory  # ✅ CORRECTO
-from langchain_community.tools import Tool
-from langchain.agents import initialize_agent  # ✅ CORRECTO
-from langchain.agents import AgentType  # ✅ CORRECTO
 from langchain.memory import ConversationBufferMemory
-from pinecone import Pinecone,ServerlessSpec
+from langchain_community.tools import Tool
+from langchain.agents import initialize_agent, AgentType
+from langchain.prompts import PromptTemplate
+from langchain.output_parsers import PydanticOutputParser
+from pydantic import BaseModel, Field
 from dotenv import load_dotenv
-import warnings
 
+# 🔹 Cargar variables de entorno
+load_dotenv()
 
-
-# Obtener API Key y entorno
+# 🔹 Configuración de Pinecone
 PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
 PINECONE_ENVIRONMENT = os.getenv("PINECONE_ENVIRONMENT")
 INDEX_NAME = "operations-research"
 
-
-
-# Inicializar modelo de embeddings y LLM
+# 🔹 Inicializar modelo de embeddings y LLM
 embedding = OpenAIEmbeddings()
 llm = ChatOpenAI(model_name="gpt-4.5-preview", temperature=0.1)
 
-# 🔹 Cargar documentos solo una vez
+# 📌 Definir estructura esperada en JSON con `Pydantic`
+class AIResponse(BaseModel):
+    output: str = Field(description="Respuesta generada por el modelo en texto plano.")
+
+# 📌 Crear un parser para validar la salida
+parser = PydanticOutputParser(pydantic_object=AIResponse)
+
+# 📌 Definir un prompt estructurado con instrucciones estrictas
+prompt = PromptTemplate(
+    template="""You are an AI assistant specialized in research operations.
+    You MUST respond in valid JSON format following this structure:
+    
+    {format_instructions}
+
+    Question: {question}""",
+    input_variables=["question"],
+    partial_variables={"format_instructions": parser.get_format_instructions()},
+)
+
+# 🔹 Cargar documentos en memoria solo una vez
 @st.cache_resource
 def load_documents(directory: str):
     """Carga y divide documentos PDF en fragmentos procesables."""
@@ -52,7 +66,6 @@ def load_documents(directory: str):
 
     return documents
 
-# Ruta de documentos (¡Cambia esto a tu ruta real!)
 DOCUMENTS_PATH = "C:/Users/gayar/Personal_Project/Documentos_Rag"
 documents = load_documents(DOCUMENTS_PATH)
 
@@ -61,16 +74,13 @@ documents = load_documents(DOCUMENTS_PATH)
 def get_vectorstore():
     """Carga o crea el vectorstore en Pinecone."""
     pc = Pinecone(api_key=PINECONE_API_KEY)
-    
+
     if INDEX_NAME not in pc.list_indexes().names():
         pc.create_index(
             name=INDEX_NAME,
             dimension=1536,
             metric="euclidean",
-            spec=ServerlessSpec(
-                cloud="aws",
-                region="eu-east1"
-            )
+            spec=ServerlessSpec(cloud="aws", region="eu-east1")
         )
 
     return PineconeVectorStore.from_existing_index(INDEX_NAME, embedding)
@@ -87,11 +97,9 @@ retrieval_tool = Tool(
     description="Busca información en la base de datos de investigación de operaciones."
 )
 
-# Verificar que la herramienta se haya creado correctamente
 if retrieval_tool is None:
     raise ValueError("❌ La herramienta de búsqueda no se ha inicializado correctamente.")
 
-# Lista de herramientas (debe contener al menos una)
 tools = [retrieval_tool]
 if not tools:
     raise ValueError("❌ No hay herramientas en la lista, el agente no podrá funcionar.")
@@ -108,8 +116,6 @@ agent = initialize_agent(
     memory=memory
 )
 
-
-
 # 🔹 Interfaz en Streamlit
 st.title("🤖 Hillier/Lieberman Corner")
 
@@ -117,14 +123,24 @@ user_input = st.text_input("✍️ What question do you have?")
 
 if user_input:
     try:
-        response = agent.invoke(user_input, handle_parsing_errors=True)
-        output_text = response.get("output", "⚠️ No output generated.")
+        # 📌 Generar el prompt con formato JSON obligatorio
+        formatted_prompt = prompt.format(question=user_input)
 
-        # Mostrar la respuesta con formato Markdown
-        st.markdown(f"### 📖 Answer:\n{output_text}", unsafe_allow_html=True)
+        # 📌 Invocar el modelo
+        response_text = llm.predict(formatted_prompt)
+
+        # 📌 Parsear la respuesta en JSON estructurado
+        response = parser.parse(response_text)
+
+        output_text = response.output
+
+    except json.JSONDecodeError:
+        st.error("🚨 The model did not return a valid JSON response.")
+        output_text = "⚠️ The response format is incorrect."
 
     except Exception as e:
         st.error(f"🚨 An error occurred: {e}")
+        output_text = "⚠️ An unexpected error occurred."
 
-
-
+    # 📌 Mostrar la respuesta en Markdown
+    st.markdown(f"### 📖 Answer:\n{output_text}", unsafe_allow_html=True)

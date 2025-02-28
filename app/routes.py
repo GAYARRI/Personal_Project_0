@@ -284,12 +284,12 @@ def generate_image():
         # Solicitar la generación de la imagen usando ChatCompletion
         
 
-        response = openai.Image.create(
-              model="dall-e-3",
-              size="1024x1024",
-              prompt=prompt,
-              quality="hd",
-              n=1,
+        response = openai.images.generate(
+            model="dall-e-3",
+            prompt=prompt,
+            size="1024x1024",
+            quality="hd",
+            n=1
 )
 
       
@@ -525,12 +525,15 @@ def limpiar_json(respuesta):
 
 # ✅ Ruta para procesar las imágenes del cubo de Rubik
 
+client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+
 @main.route('/procesar-cubo', methods=['GET'])
 def procesar_cubo():
     carpeta = "./app/static/uploads"
     resultados = {}
 
-    if not os.path.exists(carpeta):
+    if not os.path.exists(carpeta) or not os.listdir(carpeta):
         return jsonify({"error": "No se encontraron imágenes en la carpeta."}), 400
 
     for cara in os.listdir(carpeta):
@@ -540,27 +543,31 @@ def procesar_cubo():
         if os.path.isfile(ruta_completa):
             image_base64 = encode_image(ruta_completa)
             
-            # Llamada a ChatGPT para el reconocimiento de colores
-            response = openai.ChatCompletion.create(
+            # ✅ Llamada a la API de OpenAI para análisis de colores
+            response = client.chat.completions.create(
                 model="gpt-4.5-preview",
                 messages=[
                     {"role": "system", "content": "Eres un asistente experto en cubos de Rubik."},
-                    {"role": "user", "content": [
-                        {"type": "text", "text": 
-                            f"Analiza esta imagen y detecta los 9 colores en una cuadrícula 3x3. Devuelve el resultado en JSON con la estructura: "
-                            f"{{'{cara_sin_extension}': [['color1', 'color2', 'color3'], ['color4', 'color5', 'color6'], ['color7', 'color8', 'color9']]}}"},
-                        {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_base64}"}}
-                    ]}
+                    {"role": "user", "content": "Analiza esta imagen y detecta los 9 colores en una cuadrícula 3x3. Devuelve el resultado en JSON con la estructura: "
+                                                 f"{{'{cara_sin_extension}': [['color1', 'color2', 'color3'], ['color4', 'color5', 'color6'], ['color7', 'color8', 'color9']]}}"},
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": "Aquí está la imagen del cubo de Rubik:"},
+                            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_base64}"}}
+                        ]
+                    }
                 ],
-                temperature=0.15
+                temperature=0.1
             )
 
-            if "choices" in response and response["choices"]:
-                content = response["choices"][0]["message"]["content"].strip()
+            # ✅ Procesar respuesta de OpenAI
+            if response.choices:
+                content = response.choices[0].message.content.strip()
 
                 if content:
                     try:
-                        content_cleaned = limpiar_json(content)
+                        content_cleaned = limpiar_json(content)  # Función para limpiar el JSON si es necesario
                         json_response = json.loads(content_cleaned)
 
                         if cara_sin_extension in json_response:
@@ -568,17 +575,17 @@ def procesar_cubo():
 
                     except json.JSONDecodeError:
                         print(f"❌ Error al decodificar JSON para la imagen {cara}")
-                        # Si no se pudo procesar la respuesta, usar visión por computadora
-                        colores_detectados = detectar_colores_con_vision(cara)
+                        # Si la respuesta no es válida, usar visión por computadora
+                        colores_detectados = detectar_colores_con_vision(ruta_completa)
                         if colores_detectados:
                             resultados[cara_sin_extension] = colores_detectados
 
-    # ✅ NO USAR `json.dumps()` AQUÍ
     secuencia_cubo = generar_secuencia_estado(resultados) if resultados else {"secuencia_estado": ""}
 
     print(f"✅ SECUENCIA CUBO ENVIADA A rubik.html: {secuencia_cubo}")  # Depuración
 
     return render_template("rubik.html", estado_cubo=resultados, secuencia_cubo=secuencia_cubo)
+
 
 
 def detectar_colores_con_vision(imagen_path):
