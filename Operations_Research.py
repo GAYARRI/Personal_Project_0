@@ -31,7 +31,7 @@ INDEX_NAME = "operations-research"
 
 # Inicializar modelo de embeddings y LLM
 embedding = OpenAIEmbeddings()
-llm = ChatOpenAI(model_name="gpt-4", temperature=0.1)
+llm = ChatOpenAI(model_name="gpt-4.5-preview", temperature=0.1)
 
 # 🔹 Cargar documentos solo una vez
 @st.cache_resource
@@ -108,11 +108,23 @@ agent = initialize_agent(
     memory=memory
 )
 
+
+
 # 🔹 Interfaz en Streamlit
 st.title("🤖 Hillier/Lieberman Corner")
 
-user_input = st.text_input("✍️ What question do you have ? :")
+user_input = st.text_input("✍️ What question do you have?")
 
 if user_input:
-    response = agent.run(user_input)  # ✅ Ahora el agente tiene herramientas y memoria
-    st.write(response)
+    try:
+        response = agent.invoke(user_input, handle_parsing_errors=True)
+        output_text = response.get("output", "⚠️ No output generated.")
+
+        # Mostrar la respuesta con formato Markdown
+        st.markdown(f"### 📖 Answer:\n{output_text}", unsafe_allow_html=True)
+
+    except Exception as e:
+        st.error(f"🚨 An error occurred: {e}")
+
+
+

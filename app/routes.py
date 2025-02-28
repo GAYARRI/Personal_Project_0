@@ -542,7 +542,7 @@ def procesar_cubo():
             
             # Llamada a ChatGPT para el reconocimiento de colores
             response = openai.ChatCompletion.create(
-                model="gpt-4o",
+                model="gpt-4.5-preview",
                 messages=[
                     {"role": "system", "content": "Eres un asistente experto en cubos de Rubik."},
                     {"role": "user", "content": [
@@ -552,7 +552,7 @@ def procesar_cubo():
                         {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_base64}"}}
                     ]}
                 ],
-                temperature=0
+                temperature=0.15
             )
 
             if "choices" in response and response["choices"]:
