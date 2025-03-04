@@ -1,9 +1,14 @@
 {% extends "base.html" %}
 {% block content %}
     <header>
-        <ul><li><a href="{{ url_for('main.ver_documento') }}">Story_Telling</a></li></ul>
+        <ul>
+            <li style="display: flex; align-items: center; gap: 10px;">
+                <a href="{{ url_for('main.ver_documento') }}">Story_Telling</a>
+                <img src="{{ url_for('static', filename='img/Histori.png') }}" alt="Mi historia" width="100" height="75">
+            </li>
+        </ul>
         
-        <h1 class="primera">Functionalities IA aided</h1> 
+        <h1 class="primera">Functionalities AI aided</h1> 
         <style>
             .alineado {
                 display: inline;
@@ -19,31 +24,45 @@
             }
         </style>
         <div>
-            <h3 class="alineado">1.- Operations Research Corner</h3>
-            
+            <h3 style="display: inline;">1.- Operations Research Cornern </h3><img src="{{ url_for('static', filename='img/OR.jpeg') }}" alt="Mi Icono" width="75" height="50" style="display: inline;">
+        </div>    
             <ul>
-                <li><a href="/tsp">1.- Traveler Salesman Problem</a></li>
+                <li class="alineado"><a href="/tsp">1.1.- Traveler Salesman Problem</a></li>
             </ul>
         </div>
         <div>
-            <h3 class="alineado">2.- Local Database Management</h3>
+            <h3>2.- Local Database Management ( SQLite) </h3>
             <ul>
-                <li><a href="{{ url_for('main.categorias') }}">2.1-Categories</a></li>
-                <li><a href="{{ url_for('main.productos') }}">2.2.-Articles</a></li>
-                <li><a href="{{ url_for('main.clientes') }}">2.3.-Clients</a></li>
-                <li><a href="{{ url_for('main.compras') }}">2.4.-Sales</a></li>
-                <li><a href="{{ url_for('main.resumen') }}">2.5.-Resume</a></li>
-                <li><a href="{{ url_for('main.dashboard') }}">2.6.-Dashboard</a></li>
+                <li class="alineado"><a href="{{ url_for('main.categorias') }}">2.1- Categories</a></li>
+            </ul>
+            <ul>    
+                <li class="alineado"><a href="{{ url_for('main.productos') }}">2.2.- Articles</a></li>
+            </ul>
+            <ul>
+                <li class="alineado"><a href="{{ url_for('main.clientes') }}">2.3.- Clients</a></li>
+            </ul>
+            <ul>    
+                <li class="alineado"><a href="{{ url_for('main.compras') }}">2.4.- Sales</a></li>
+            </ul>
+            <ul>    
+                <li class="alineado"><a href="{{ url_for('main.resumen') }}">2.5.- Resume</a></li>
+            </ul>
+            <ul>    
+                <li class="alineado"><a href="{{ url_for('main.dashboard') }}">2.6.- Dashboard</a></li>
             </ul>
         </div>
         <div>
-            <h3 class="alineado">3.- Images Generating with @ DALL-E</h3>
+            <h3>3.- Images Generating with @ DALL-E</h3>
             <form method="POST" action="{{ url_for('main.generate_image') }}" onsubmit="mostrarCargando()">
                 <ul>
-                    <li><label for="prompt">3.1-Describe your image:</label></li>
-                </ul>    
-                <input type="text" id="prompt" name="prompt" required>
-                <button type="submit">Generate</button>
+                    <li class="alineado"><label for="prompt">3.1- Describe your image:</label></li>
+                </ul>
+            <ul>
+                <li class="alineado" style="display: flex; align-items: center; gap: 20px;">
+                    <input type="text" style="width: 400px;" id="prompt" name="prompt" required>
+                    <button type="submit">Generate</button>
+                </li> 
+            </ul>
             </form>
             <div id="spinner" style="display: none; text-align: center;">
                 <p>Working on progress...</p>
@@ -57,15 +76,15 @@
             {% endif %}
         </div>
         <div>
-            <h3 class="alineado">4.- Computer Vision (GPT.4o + CV)</h3>
+            <h3>4.- Computer Vision (GPT 4.5 + OpenCV)</h3>
             <ul>
-                <li><a href="/rubik">4.1.-Rubik's cube</a></li>
+                <li class="alineado"><a href="/rubik">4.1.- Rubik's Cube</a></li>
             </ul>    
         </div>
         <div>
-            <h3 class ="alineado">5.- ChatBot_Operations Research(@LangChain)</h3>
+            <h3>5.- ChatBot_Operations Research(@LangChain)</h3>
             <ul>
-                <li><a href="http://92.189.99.29:8501" target="_blank">5.1.-Ir al Chatbot</a></li>
+                <li class="alineado"><a href="http://92.189.99.29:8501" target="_blank">5.1.- OR Chatbot</a></li>
             </ul>    
 
 

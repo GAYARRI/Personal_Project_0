@@ -199,7 +199,7 @@ def resumen():
 
 @main.route('/', methods=['GET'])
 def home():
-    return render_template('home.html')
+    return render_template('home.html',show_home_button=False)
 
 app = Flask(__name__)
 openai.api_key = os.getenv('OPENAI_API_KEY')

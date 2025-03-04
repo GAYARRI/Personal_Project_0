@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Gestión de Registros{% endblock %}</title>
+    <title>{% block title %}Página de Inicio{% endblock %}</title>
     
     <style>
         /* Imagen en la parte superior derecha */
         .imagen-circular {
             position: absolute;
             top: 0;
-            left: 50%;
+            left: 45%;
             max-width: 150px;
             width: 120%;
             border-radius: 50%; /* Hace que la imagen sea completamente circular */
@@ -32,6 +32,18 @@
     <header>
         <button onclick="window.location.href='/'">Inicio</button>
         <img src="{{ url_for('static', filename='img/jarg2.png') }}" class="imagen-circular"><br><br>
+        <script>
+            // Verifica si la URL actual es la página de inicio
+            // Verifica si la URL actual es la página de inicio
+               if (window.location.pathname === "/" || window.location.pathname === "/index.html") {
+                   document.querySelectorAll("button").forEach(btn => {
+               if (btn.innerText.trim() === "Inicio") {
+                   btn.style.display = "none";}});}
+
+            
+        </script>
+
+
     </header>
 
     <main>
