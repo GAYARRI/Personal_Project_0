@@ -1,5 +1,8 @@
 from flask import Blueprint, render_template, request, redirect, url_for, Flask
 from flask import jsonify,flash
+from flask_wtf import FlaskForm
+from wtforms import StringField, SubmitField, TextAreaField
+from wtforms.validators import DataRequired
 from app.models import Categoria, Producto, Ciudad, Cliente, Compra
 from app_db import db
 import os # Para leer variables de entorno
@@ -28,6 +31,7 @@ import matplotlib.pyplot as plt
 import base64
 from docx import Document
 import io
+from scipy.optimize import linprog
 
 
 
@@ -764,7 +768,80 @@ def ver_documento():
     
     return render_template("documento.html", contenido=contenido)
 
+class LPForm(FlaskForm):
+    variables = StringField('Decision Variables (comma-sep)', validators=[DataRequired()])
+    objective_function = StringField('Objective Function to minimize (comma-sep)', validators=[DataRequired()])
+    constraints = TextAreaField('Constraints (one per line, format: coefficients <=  /  >=  value)', validators=[DataRequired()])
+    submit = SubmitField('Submit',render_kw={'class': 'button'})
+  
+@main.route('/simplex_input', methods=['GET', 'POST'])
+def simplex_input():
+    form = LPForm()
+    if form.validate_on_submit():
+        variables = [var.strip() for var in form.variables.data.split(',')]
+        objective_function = list(map(float, form.objective_function.data.split(',')))
+        constraint_lines = [line.strip() for line in form.constraints.data.splitlines()]
+        
+        
+        A = []
+        b = []
+        sense = []
+        
+        for line in constraint_lines:
+            parts = line.split()
+            coeffs = list(map(float, parts[:-2]))
+            op = parts[-2]
+            value = float(parts[-1])
+            A.append(coeffs)
+            b.append(value)
+            sense.append(op)
+        
+        # Convert constraints for linprog
+        A_ub = []
+        b_ub = []
+        A_eq = []
+        b_eq = []
+        
+        for i, s in enumerate(sense):
+            if s == '<=':
+                A_ub.append(A[i])
+                b_ub.append(b[i])
+            elif s == '==':
+                A_eq.append(A[i])
+                b_eq.append(b[i])
+        
+        res = linprog(c=objective_function, A_ub=A_ub if A_ub else None, b_ub=b_ub if b_ub else None,
+                      A_eq=A_eq if A_eq else None, b_eq=b_eq if b_eq else None, method='highs')
+        
+    
+        
+        goal = sum(a * b for a, b in zip(res.x.tolist(), objective_function))
+    
 
+        return redirect(url_for('main.simplex', 
+                variables=','.join(variables), 
+                objective_function=form.objective_function.data, 
+                constraints=';'.join(constraint_lines), 
+                valores_optimos=','.join(map(str, res.x.tolist())) if res.success else 'Infeasible',
+                goal=str(sum(a * b for a, b in zip(res.x.tolist(), objective_function))) if res.success else '0'))
+
+        
+    
+    return render_template('simplex_input.html', form=form)  
+    
+@main.route('/simplex')
+def simplex():
+    variables = request.args.get('variables', '').split(',')
+    objective_function = request.args.get('objective_function', '')
+    constraints = request.args.get('constraints', '').split(';')
+    valores_optimos = request.args.get('valores_optimos')
+    
+
+    goal=request.args.get('goal','0')
+
+    return render_template('simplex.html', variables=variables, 
+                           objective_function=objective_function, 
+                           constraints=constraints, val_opt_= valores_optimos, goal_= goal)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Imput Simplex{% endblock %}
+{% block content %}
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Linear Programming</title>
+</head>
+<body>
+    <h2>Simplex_Method</h2>
+    <form method="POST">
+        {{ form.hidden_tag() }}
+        <div style="display: flex; flex-direction: column;width: 400px">
+            <label>{{ form.variables.label }}</label>
+            {{ form.variables(rows=5, cols=15) }}
+        </div>
+        <br><br>
+        <div style="display: flex; flex-direction: column;width: 400px">
+            <label>{{ form.objective_function.label }}</label>
+            {{ form.objective_function(rows=5, cols=15) }}
+        </div>
+        <br><br>
+        <div style="display: flex; flex-direction: column;width: 400px">
+            <label>{{ form.constraints.label }}</label>
+            {{ form.constraints(rows=5, cols=15) }}
+        </div>  
+        <br><br>
+        {{ form.submit() }}
+
+    </form>
+
+</body>
+</html>
+{% endblock %}

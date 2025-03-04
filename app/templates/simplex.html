@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}Solucion Simplex{% endblock %}
+{% block content %}
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solution</title>
+</head>
+<body>
+    <h2>Simplex_Solution</h2>
+    <p><strong>Variables:</strong> {{ variables }}</p>
+    <p><strong>Objective Function ( minimize ):</strong> {{ objective_function }}</p>
+    <p><strong>Constraints:</strong></p>
+    <ul>
+        {% for constraint in constraints %}
+            <li>{{ constraint }}</li>
+        {% endfor %}
+    </ul>
+    <p><strong>Optimal_Point:</strong> {{ val_opt_ }}</p>
+    <p><strong>Optimal_Value:</strong> {{ goal_ }}</p>
+</body>
+</html>
+{% endblock %}
+
