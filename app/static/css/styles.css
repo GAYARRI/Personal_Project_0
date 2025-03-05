@@ -35,15 +35,22 @@ table {
     margin: 20px 0;
 }
 
-table th, table td {
-    padding: 12px;
-    border: 1px solid #ddd;
-    text-align: left;
+table td {
+    background-color: #f4f6f8; /* Color de fondo */
+    color: rgb(3, 41, 99); /* Color del texto */
+    font-size: 16px; /* Tamaño de fuente */
+    text-transform: uppercase; /* Convertir a mayúsculas */
+    padding: 10px;
+    border: 1px solid #0f0101;
 }
 
 table th {
-    background-color: #34495e;
-    color: white;
+    background-color: #d5e1ec; /* Color de fondo */
+    color: rgb(22, 4, 4); /* Color del texto */
+    font-size: 16px; /* Tamaño de fuente */
+    text-transform: uppercase; /* Convertir a mayúsculas */
+    padding: 10px;
+    border: 1px solid #110101;
 }
 
 /* Spinner */

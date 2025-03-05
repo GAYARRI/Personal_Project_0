@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, Flask
 from flask import jsonify,flash
+from datetime import datetime
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired
@@ -50,7 +51,8 @@ def compras():
     compras = Compra.query.all()
     productos = Producto.query.all()  # 🔹 Obtener productos para el formulario
     clientes = Cliente.query.all()  # 🔹 Obtener clientes para el formulario
-    return render_template('compras.html', compras=compras, productos=productos, clientes=clientes)
+    ciudades = Ciudad.query.all()  # 🔹 Obtener ciudades para el formulario
+    return render_template('compras.html', compras=compras, productos=productos, clientes=clientes, ciudades=ciudades)
 
 
 @main.route('/agregar_compra', methods=['POST'])
