@@ -11,14 +11,14 @@
     <label for="producto_id">Producto:</label>
     <select name="producto_id" required>
         {% for producto in productos %}
-        <option value="{{ producto.id }}">{{ producto.nombre }}</option>
+           <option value="{{ producto.id }}">{{ producto.nombre}}</option>
         {% endfor %}
     </select>
 
     <label for="cliente_id">Comprador:</label>
     <select name="cliente_id" required>
         {% for cliente in clientes %}
-        <option value="{{ cliente.id }}">{{ cliente.nombre }} {{ cliente.apellidos }}</option>
+           <option value="{{ cliente.id }}">{{ cliente.nombre }} {{ cliente.apellidos }}</option>
         {% endfor %}
     </select>
 

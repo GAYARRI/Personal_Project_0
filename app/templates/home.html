@@ -4,27 +4,28 @@
         <ul>
             <li style="display: flex; align-items: center; gap: 10px;">
                 <a href="{{ url_for('main.ver_documento') }}">Story_Telling</a>
-                <img src="{{ url_for('static', filename='img/Histori.png') }}" alt="Mi historia" width="100" height="75">
+                <img src="{{ url_for('static', filename='img/Histori.png') }}" alt="Mi historia" width="75" height="50">
             </li>
         </ul>
         
-        <h1 class="primera">Functionalities AI aided</h1> 
+        <h1 class="primera">Functionalities AI 🤖 aided </h1> 
         <style>
             .alineado {
                 display: inline;
                 margin-left: 400px;
             }
             .primera {
-                l
                 display: inline;
                 margin-left: 175px;
-                line-height: 3;
-                text-decoration-line: underline;
+                line-height: 2;
                 
             }
         </style>
         <div>
-            <h3 style="display: inline;">1.- Operations Research Cornern </h3><img src="{{ url_for('static', filename='img/OR.jpeg') }}" alt="Mi Icono" width="75" height="50" style="display: inline;">
+            <li style="display: flex;align-items: center;gap:10px;">
+                <h3> 1.- Operations Research Corner</h3>
+                <img src="{{ url_for('static', filename='img/OR.jpeg') }}" alt="Mi Icono" width="75" height="50">
+            </li>    
         </div>    
             <ul>
                 <li class="alineado"><a href="/tsp">1.1.- Traveler Salesman Problem</a></li>

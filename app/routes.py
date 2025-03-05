@@ -48,7 +48,9 @@ main = Blueprint('main', __name__)
 @main.route('/compras', methods=['GET'])
 def compras():
     compras = Compra.query.all()
-    return render_template('compras.html', compras=compras)
+    productos = Producto.query.all()  # 🔹 Obtener productos para el formulario
+    clientes = Cliente.query.all()  # 🔹 Obtener clientes para el formulario
+    return render_template('compras.html', compras=compras, productos=productos, clientes=clientes)
 
 
 @main.route('/agregar_compra', methods=['POST'])
@@ -86,10 +88,6 @@ def borrar_compra(id):
     db.session.commit()
     flash("Compra eliminada con éxito.", "success")
     return redirect(url_for('main.compras'))
-
-
-
-
 
 
 # Gestión de categorías
@@ -268,9 +266,6 @@ def plot_to_base64(df, title, xlabel, ylabel):
     plt.close()
 
     return base64.b64encode(img.getvalue()).decode('utf-8')
-
-
-
 
 
 # Ruta para generar imágenes
