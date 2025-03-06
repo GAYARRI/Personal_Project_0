@@ -20,54 +20,66 @@
                 line-height: 2;
                 
             }
+            .segunda {
+                display: inline;
+                margin-left: 10px;
+                line-height: 1;
+                
+            }
         </style>
         <div>
             <li style="display: flex;align-items: center;gap:10px;">
-                <h3> 1.- Operations Research Corner</h3>
+                <h3 class="segunda" > 1.- Operations Research Corner</h3>
                 <img src="{{ url_for('static', filename='img/OR.jpeg') }}" alt="Mi Icono" width="75" height="50">
             </li>    
         </div>    
             <ul>
-                <li class="alineado"><a href="/tsp">1.1.- Traveler Salesman Problem</a></li>
+                <li class="alineado"><a href="/tsp">1.1.- Traveler Salesman Problem_(TSP)</a></li>
             </ul>    
             <ul>    
                 <li class="alineado"><a href="{{ url_for('main.simplex_input') }}">1.2.- Linear Programming_(Simplex)</a></li>
             </ul>
+            <ul>    
+                <li class="alineado"><a href="{{ url_for('main.sarima') }}">1.3.- Time_Series(S-ARIMA)</a></li> 
+            </ul>
+
+
         </div>
         <div>
-            <h3>2.- Local Database Management ( SQLite) </h3>
+            <h3 class="segunda">2.- Local Database Management ( SQLite) </h3>
             <ul>
-                <li class="alineado"><a href="{{ url_for('main.categorias') }}">2.1- Categories</a></li>
+                <li class="alineado"><a href="{{ url_for('main.categorias') }}">2.1- Categories_Management</a></li>
             </ul>
             <ul>    
-                <li class="alineado"><a href="{{ url_for('main.productos') }}">2.2.- Articles</a></li>
+                <li class="alineado"><a href="{{ url_for('main.productos') }}">2.2.- Articles_Management</a></li>
             </ul>
             <ul>
-                <li class="alineado"><a href="{{ url_for('main.clientes') }}">2.3.- Clients</a></li>
+                <li class="alineado"><a href="{{ url_for('main.clientes') }}">2.3.- Clients_Management</a></li>
             </ul>
             <ul>    
-                <li class="alineado"><a href="{{ url_for('main.compras') }}">2.4.- Sales</a></li>
+                <li class="alineado"><a href="{{ url_for('main.compras') }}">2.4.- Sales_Management</a></li>
             </ul>
             <ul>    
-                <li class="alineado"><a href="{{ url_for('main.resumen') }}">2.5.- Resume</a></li>
+                <li class="alineado"><a href="{{ url_for('main.resumen') }}">2.5.- Resume_Query</a></li>
             </ul>
             <ul>    
                 <li class="alineado"><a href="{{ url_for('main.dashboard') }}">2.6.- Dashboard</a></li>
             </ul>
         </div>
         <div>
-            <h3>3.- Images Generating with @ DALL-E</h3>
+            <h3 class="segunda">3.- Images Generating with @ DALL-E</h3>
             <form method="POST" action="{{ url_for('main.generate_image') }}" onsubmit="mostrarCargando()">
                 <ul>
                     <li class="alineado"><label for="prompt">3.1- Describe your image:</label></li>
                 </ul>
                 <ul>
-                   <li class="alineado" style="display: flex; align-items: center; gap: 20px;">
-                       <input type="text" style="width: 400px;" id="prompt" name="prompt" required>
-                       <button type="submit">Generate</button>
-                   </li> 
+                    <li class="alineado" style="display: flex; align-items: center; gap: 20px;">
+                        <textarea rows="3" cols="45" id="prompt" name="prompt" required></textarea>
+                        <button type="submit">Generate</button>
+                    </li> 
                 </ul>
             </form>
+            
             <div id="spinner" style="display: none; text-align: center;">
                 <p>Working on progress...</p>
                 <div class="spinner"></div>
@@ -80,15 +92,15 @@
             {% endif %}
         </div>
         <div>
-            <h3>4.- Computer Vision (GPT 4.5 + OpenCV)</h3>
+            <h3 class="segunda">4.- Computer Vision (GPT 4.5 + OpenCV)</h3>
             <ul>
                 <li class="alineado"><a href="/rubik">4.1.- Rubik's Cube</a></li>
             </ul>    
         </div>
         <div>
-            <h3>5.- ChatBot_Operations Research(@LangChain)</h3>
+            <h3 class="segunda">5.- Operations Research Consultancy</h3>
             <ul>
-                <li class="alineado"><a href="http://92.189.99.29:8501" target="_blank">5.1.- OR Chatbot</a></li>
+                <li class="alineado"><a href="http://92.189.99.29:8501" target="_blank">5.1.- OR_Chatbot@LangChain(GPT_4.5)</a></li>
             </ul>    
 
 

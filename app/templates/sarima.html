@@ -1,0 +1,272 @@
+[{% extends "base.html" %}
+
+{% block title %}SARIMA{% endblock %}
+
+{% block content %}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modelo SARIMA</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .container {
+            width: 80%;
+            max-width: 900px;
+            margin: auto;
+        }
+        .chart-container {
+            position: relative;
+            margin: 20px 0;
+            height: 400px;
+        }
+        canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
+        pre {
+            background-color: #f4f4f4;
+            padding: 10px;
+            border: 1px solid #ddd;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Subir Serie Temporal para Modelado SARIMA</h2>
+        <form id="uploadForm" enctype="multipart/form-data">
+            <label for="fileInput">Cargar archivo CSV:</label>
+            <input type="file" id="fileInput" name="file" accept=".csv"><br><br>
+            <label for="p">p:</label>
+            <input type="number" id="p" name="p" value="1" min="0"><br><br>
+            <label for="d">d:</label>
+            <input type="number" id="d" name="d" value="1" min="0"><br><br>
+            <label for="q">q:</label>
+            <input type="number" id="q" name="q" value="1" min="0"><br><br>
+            <label for="P">P:</label>
+            <input type="number" id="P" name="P" value="1" min="0"><br><br>
+            <label for="D">D:</label>
+            <input type="number" id="D" name="D" value="1" min="0"><br><br>
+            <label for="Q">Q:</label>
+            <input type="number" id="Q" name="Q" value="1" min="0"><br><br>
+            <label for="s">s (periodo estacional):</label>
+            <input type="number" id="s" name="s" value="7" min="1"><br><br>
+            <button type="button" onclick="uploadFile()">Cargar y Modelar</button>
+        </form>
+
+        <h2>Resultados</h2>
+        <div class="chart-container">
+            <canvas id="timeSeriesChart"></canvas>
+        </div>
+
+        <h2>Residuos y Funciones de Autocorrelación</h2>
+        <div class="chart-container">
+            <canvas id="residualsChart"></canvas>
+        </div>
+        <div class="chart-container">
+            <canvas id="acfChart"></canvas>
+        </div>
+        <div class="chart-container">
+            <canvas id="pacfChart"></canvas>
+        </div>
+
+        <h2>Modelo Ajustado</h2>
+        <pre id="modelSummary"></pre>
+    </div>
+
+    <script>
+        function uploadFile() {
+            let fileInput = document.getElementById('fileInput');
+            let file = fileInput.files[0];
+
+            if (!file) {
+                alert("Selecciona un archivo CSV");
+                return;
+            }
+
+            let formData = new FormData();
+            formData.append("file", file);
+            formData.append("p", document.getElementById('p').value);
+            formData.append("d", document.getElementById('d').value);
+            formData.append("q", document.getElementById('q').value);
+            formData.append("P", document.getElementById('P').value);
+            formData.append("D", document.getElementById('D').value);
+            formData.append("Q", document.getElementById('Q').value);
+            formData.append("s", document.getElementById('s').value);
+
+            fetch("/sarima", {
+                method: "POST",
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                plotTimeSeries(data);
+                plotResiduals(data);
+                plotACF(data.acf);
+                plotPACF(data.pacf);
+                document.getElementById('modelSummary').textContent = data.model_summary;
+            })
+            .catch(error => console.error("Error:", error));
+        }
+
+        function plotTimeSeries(data) {
+            let ctx = document.getElementById('timeSeriesChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar', // Tipo de gráfico principal
+                data: {
+                    labels: data.dates.concat(data.forecast_dates),
+                    datasets: [
+                        {
+                            type: 'bar', // Gráfico de barras para la serie original
+                            label: 'Serie Original',
+                            data: data.original.concat(new Array(data.forecast.length).fill(null)),
+                            yAxisID: 'y',
+                        },
+                        {
+                            type: 'line', // Gráfico de líneas para la serie ajustada
+                            label: 'Serie Ajustada',
+                            data: data.fitted.concat(new Array(data.forecast.length).fill(null)),
+                            yAxisID: 'y',
+                        },
+                        {
+                            type: 'line', // Gráfico de líneas para la predicción
+                            label: 'Predicción',
+                            data: new Array(data.original.length).fill(null).concat(data.forecast),
+                            yAxisID: 'y',
+                        },
+                    ],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            title: { display: true, text: 'Fecha' },
+                        },
+                        y: {
+                            title: { display: true, text: 'Valor' },
+                            position: 'left',
+                        },
+                    },
+                },
+            });
+        }
+
+
+        function plotResiduals(data) {
+            // Obtener el contexto del canvas donde se renderizará el gráfico
+            let ctx = document.getElementById('residualsChart').getContext('2d');
+            
+            // Crear una nueva instancia de Chart
+            new Chart(ctx, {
+                type: 'bar', // Tipo de gráfico: barras
+                data: {
+                    labels: data.dates, // Etiquetas en el eje X (fechas)
+                    datasets: [{
+                        label: 'Residuos', // Etiqueta del conjunto de datos
+                        data: data.residuals, // Valores del conjunto de datos
+                    }]
+                },
+                options: {
+                    responsive: true, // El gráfico se adapta al tamaño del contenedor
+                    maintainAspectRatio: false, // No mantener la relación de aspecto predeterminada
+                    scales: {
+                        x: {
+                            title: {                                display: true,
+                                text: 'Fecha' // Título del eje X
+                            }
+                        },
+                        y: {
+                            max: 2,
+                            min: -2,
+                            title: {
+                                display: true,
+                                text: 'Residuo' // Título del eje Y
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function plotACF(acfData) {
+            let ctx = document.getElementById('acfChart').getContext('2d');
+            new Chart(ctx, {
+                 type: 'bar',
+                 data: {
+                    labels: acfData.lags,
+                    datasets: [{
+                    label: 'ACF',
+                    data: acfData.values,
+                    backgroundColor: 'rgba(0, 123, 255, 0.5)',
+                    borderColor: 'rgba(0, 123, 255, 1)',
+                    borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: { title: { display: true, text: 'Retardo' } },
+                        y: { title: { display: true, text: 'Autocorrelación' }, ticks: { min: -1, max: 1 } }
+                    }
+                }
+            });
+        }
+        function plotPACF(pacfData) {
+            let ctx = document.getElementById('pacfChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: pacfData.lags,
+                    datasets: [{
+                        label: 'PACF',
+                        data: pacfData.values,
+                        backgroundColor: 'rgba(255, 193, 7, 0.5)',
+                        borderColor: 'rgba(255, 193, 7, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { title: { display: true, text: 'Retardo' } },
+                        y: { title: { display: true, text: 'Autocorrelación Parcial' }, ticks: { min: -1, max: 1 } }
+                    }
+                }
+            });
+        }
+
+        function plotPACF(pacfData) {
+            let ctx = document.getElementById('pacfChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: pacfData.lags,
+                    datasets: [{
+                        label: 'PACF',
+                        data: pacfData.values,
+                        backgroundColor: 'rgba(255, 193, 7, 0.5)',
+                        borderColor: 'rgba(255, 193, 7, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { title: { display: true, text: 'Retardo' } },
+                        y: { title: { display: true, text: 'Autocorrelación Parcial' }, ticks: { min: -1, max: 1 } }
+                    }
+                }
+            });
+        }
+
+   </script>    
+</body>
+{% endblock %} 

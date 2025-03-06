@@ -33,6 +33,9 @@ import base64
 from docx import Document
 import io
 from scipy.optimize import linprog
+import statsmodels.api as sm
+from statsmodels.tsa.statespace.sarimax import SARIMAX
+from statsmodels.tsa.arima.model import ARIMA
 
 
 
@@ -839,6 +842,102 @@ def simplex():
     return render_template('simplex.html', variables=variables, 
                            objective_function=objective_function, 
                            constraints=constraints, val_opt_= valores_optimos, goal_= goal)
+
+
+
+# Ruta para la carga del archivo y procesamiento de SARIMA
+
+@main.route('/sarima', methods=['GET','POST'])
+def sarima():
+
+    if request.method == 'GET':
+        return render_template('sarima.html')  # Muestra la página con formulario
+    else:
+        if 'file' not in request.files:
+           return jsonify({'error': 'No file part'})
+
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'})
+
+    df = pd.read_csv(file, parse_dates=[0], index_col=0)
+    df = df.asfreq('D')  # Asegurar frecuencia 
+    df.interpolate(inplace=True)  # Rellenar valores faltantes si hay
+
+    # Obtener parámetros del formulario
+    try:
+        p = int(request.form.get('p', 1))
+        d = int(request.form.get('d', 1))
+        q = int(request.form.get('q', 1))
+        P = int(request.form.get('P', 1))
+        D = int(request.form.get('D', 1))
+        Q = int(request.form.get('Q', 1))
+        s = int(request.form.get('s', 7))
+    except ValueError:
+        return jsonify({'error': 'Los parámetros del modelo deben ser enteros válidos'})
+
+    # Ajuste del modelo SARIMA con los parámetros ingresados
+    order = (p, d, q)
+    seasonal_order = (P, D, Q, s)
+
+    model = sm.tsa.statespace.SARIMAX(df, order=order, seasonal_order=seasonal_order)
+    results = model.fit()
+
+    df['fitted'] = results.fittedvalues
+    residuals = df.iloc[:, 0] - df['fitted']  # Cálculo de los residuos
+    residuals=residuals*1000 # reescalamos los residuos para que sean visibles
+
+    # Generar predicciones para los próximos 5 periodos
+    forecast_steps = 5
+    forecast_index = pd.date_range(start=df.index[-1], periods=forecast_steps+1, freq='D')[1:]
+    forecast = results.get_forecast(steps=forecast_steps)
+    forecast_values = forecast.predicted_mean
+
+    # Extraer la forma funcional del modelo
+    model_summary = results.summary().as_text()
+
+    # Crear gráficos de residuos, ACF y PACF
+    fig, axes = plt.subplots(3, 1, figsize=(10, 8))
+
+    # Gráfico de residuos
+    axes[0].plot(residuals)
+    axes[0].set_title('Residuos del Modelo')
+    print(residuals)
+
+    # Gráfico de ACF
+    sm.graphics.tsa.plot_acf(residuals, lags=40, ax=axes[1])
+    axes[1].set_title('Función de Autocorrelación (ACF)')
+    
+
+    # Gráfico de PACF
+    sm.graphics.tsa.plot_pacf(residuals, lags=40, ax=axes[2])
+    axes[2].set_title('Función de Autocorrelación Parcial (PACF)')
+
+    plt.tight_layout()
+
+    # Guardar la figura en un objeto BytesIO
+    img = io.BytesIO()
+    plt.savefig(img, format='png')
+    plt.close(fig)
+    img.seek(0)
+
+    # Convertir la imagen a base64
+    plot_url = base64.b64encode(img.getvalue()).decode()
+
+    # Retornar datos en formato JSON
+    return jsonify({
+        'original': df.iloc[:, 0].tolist(),
+        'fitted': df['fitted'].tolist(),
+        'residuals': residuals.tolist(),
+        'dates': df.index.strftime('%Y-%m-%d').tolist(),
+        'forecast': forecast_values.tolist(),
+        'forecast_dates': forecast_index.strftime('%Y-%m-%d').tolist(),
+        'model_summary': model_summary,
+        'plot_url': plot_url
+    })
+
+
+
 
 
 if __name__ == "__main__":
