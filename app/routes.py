@@ -28,6 +28,8 @@ from PIL import Image
 from io import BytesIO
 import re
 import pandas as pd
+import matplotlib
+matplotlib.use('Agg')  # 🔴 FORZAR BACKEND SIN GUI
 import matplotlib.pyplot as plt
 import base64
 from docx import Document
@@ -36,6 +38,8 @@ from scipy.optimize import linprog
 import statsmodels.api as sm
 from statsmodels.tsa.statespace.sarimax import SARIMAX
 from statsmodels.tsa.arima.model import ARIMA
+from statsmodels.tsa.stattools import acf, pacf
+
 
 
 
@@ -847,21 +851,22 @@ def simplex():
 
 # Ruta para la carga del archivo y procesamiento de SARIMA
 
-@main.route('/sarima', methods=['GET','POST'])
+@main.route('/sarima', methods=['GET', 'POST'])
 def sarima():
-
     if request.method == 'GET':
-        return render_template('sarima.html')  # Muestra la página con formulario
-    else:
-        if 'file' not in request.files:
-           return jsonify({'error': 'No file part'})
+        return render_template('sarima.html')  # Mostrar página inicial
+
+    # Si es una solicitud POST y no se envió archivo
+    if 'file' not in request.files:
+        return jsonify({'error': 'No se ha seleccionado un archivo'})
 
     file = request.files['file']
     if file.filename == '':
-        return jsonify({'error': 'No selected file'})
+        return jsonify({'error': 'No se ha seleccionado un archivo'})
 
+    # Cargar los datos del CSV
     df = pd.read_csv(file, parse_dates=[0], index_col=0)
-    df = df.asfreq('D')  # Asegurar frecuencia 
+    df = df.asfreq('D')  # Asegurar frecuencia diaria
     df.interpolate(inplace=True)  # Rellenar valores faltantes si hay
 
     # Obtener parámetros del formulario
@@ -874,70 +879,87 @@ def sarima():
         Q = int(request.form.get('Q', 1))
         s = int(request.form.get('s', 7))
     except ValueError:
-        return jsonify({'error': 'Los parámetros del modelo deben ser enteros válidos'})
+        return jsonify({'error': 'Los parámetros deben ser números enteros válidos'})
 
-    # Ajuste del modelo SARIMA con los parámetros ingresados
+    # Ajustar el modelo SARIMA con los parámetros ingresados
     order = (p, d, q)
     seasonal_order = (P, D, Q, s)
 
-    model = sm.tsa.statespace.SARIMAX(df, order=order, seasonal_order=seasonal_order)
-    results = model.fit()
+    try:
+        model = sm.tsa.statespace.SARIMAX(df, order=order, seasonal_order=seasonal_order)
+        results = model.fit()
+    except Exception as e:
+        return jsonify({'error': f'Error al ajustar el modelo: {str(e)}'})
 
     df['fitted'] = results.fittedvalues
-    residuals = df.iloc[:, 0] - df['fitted']  # Cálculo de los residuos
-    residuals=residuals*1000 # reescalamos los residuos para que sean visibles
+    residuals = results.resid
 
-    # Generar predicciones para los próximos 5 periodos
-    forecast_steps = 5
+
+    # Predicciones para los próximos 6 días
+    forecast_steps = 6
     forecast_index = pd.date_range(start=df.index[-1], periods=forecast_steps+1, freq='D')[1:]
     forecast = results.get_forecast(steps=forecast_steps)
-    forecast_values = forecast.predicted_mean
 
     # Extraer la forma funcional del modelo
     model_summary = results.summary().as_text()
 
-    # Crear gráficos de residuos, ACF y PACF
-    fig, axes = plt.subplots(3, 1, figsize=(10, 8))
+    # Cálculo de ACF y PACF
+    acf_values = acf(residuals, nlags=40)
+    pacf_values = pacf(residuals, nlags=40)
 
-    # Gráfico de residuos
-    axes[0].plot(residuals)
-    axes[0].set_title('Residuos del Modelo')
-    print(residuals)
-
-    # Gráfico de ACF
-    sm.graphics.tsa.plot_acf(residuals, lags=40, ax=axes[1])
-    axes[1].set_title('Función de Autocorrelación (ACF)')
+    # --- Creación de gráficos en base64 ---
     
-
-    # Gráfico de PACF
-    sm.graphics.tsa.plot_pacf(residuals, lags=40, ax=axes[2])
-    axes[2].set_title('Función de Autocorrelación Parcial (PACF)')
-
-    plt.tight_layout()
-
-    # Guardar la figura en un objeto BytesIO
+    # 1. Serie Original vs Ajustada
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.bar(df.index, df.iloc[:, 0], label='Serie Original', color='blue', alpha=0.5)
+    ax.plot(df.index, df['fitted'], label='Serie Ajustada', color='red', linewidth=2)
+    ax.set_title('Serie Original y Ajustada')
+    ax.set_xlabel('Fecha')
+    ax.set_ylabel('Valor')
+    ax.legend()
     img = io.BytesIO()
     plt.savefig(img, format='png')
     plt.close(fig)
     img.seek(0)
+    original_fitted_plot = base64.b64encode(img.getvalue()).decode()
 
-    # Convertir la imagen a base64
-    plot_url = base64.b64encode(img.getvalue()).decode()
+    # 2. Residuos del Modelo
+    fig, ax = plt.subplots(figsize=(10, 4))
+    ax.plot(df.index, residuals, label='Residuos', color='purple')
+    ax.set_title('Residuos del Modelo')
+    ax.set_xlabel('Fecha')
+    ax.set_ylabel('Residuo')
+    ax.legend()
+    img = io.BytesIO()
+    plt.savefig(img, format='png')
+    plt.close(fig)
+    img.seek(0)
+    residuals_plot = base64.b64encode(img.getvalue()).decode()
 
-    # Retornar datos en formato JSON
-    return jsonify({
-        'original': df.iloc[:, 0].tolist(),
-        'fitted': df['fitted'].tolist(),
-        'residuals': residuals.tolist(),
-        'dates': df.index.strftime('%Y-%m-%d').tolist(),
-        'forecast': forecast_values.tolist(),
-        'forecast_dates': forecast_index.strftime('%Y-%m-%d').tolist(),
-        'model_summary': model_summary,
-        'plot_url': plot_url
-    })
+    # 3. Gráficos de ACF y PACF
+    fig, axes = plt.subplots(nrows=2, ncols=1, figsize=(10, 8))
 
+    # Gráfico ACF
+    sm.graphics.tsa.plot_acf(residuals, lags=40, ax=axes[0])
+    axes[0].set_title('Función de Autocorrelación (ACF)')
 
+    # Gráfico PACF
+    sm.graphics.tsa.plot_pacf(residuals, lags=40, ax=axes[1])
+    axes[1].set_title('Función de Autocorrelación Parcial (PACF)')
 
+    plt.tight_layout()
+    img = io.BytesIO()
+    plt.savefig(img, format='png')
+    plt.close(fig)
+    img.seek(0)
+    acf_pacf_plot = base64.b64encode(img.getvalue()).decode()
+
+    # Renderizar la plantilla con gráficos
+    return render_template('sarima.html', 
+                           original_fitted_plot=original_fitted_plot, 
+                           residuals_plot=residuals_plot, 
+                           acf_pacf_plot=acf_pacf_plot,
+                           model_summary=model_summary)
 
 
 if __name__ == "__main__":
