@@ -4,7 +4,7 @@ import json
 from pinecone import Pinecone, ServerlessSpec
 from langchain_community.chat_models import ChatOpenAI
 from langchain.chains import RetrievalQA
-from langchain_openai import OpenAIEmbeddings, ChatOpenAI
+from langchain_openai import OpenAIEmbeddings
 from langchain_pinecone import PineconeVectorStore
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -42,8 +42,11 @@ prompt = PromptTemplate(
     
     {format_instructions}
 
+    Chat History:
+    {chat_history}
+
     Question: {question}""",
-    input_variables=["question"],
+    input_variables=["question", "chat_history"],
     partial_variables={"format_instructions": parser.get_format_instructions()},
 )
 
@@ -87,8 +90,18 @@ def get_vectorstore():
 
 vectorstore = get_vectorstore()
 
+# 🔹 Crear memoria del chatbot (Persistencia con `st.session_state`)
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
+
+memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
+
 # 🔹 Crear la cadena de búsqueda en documentos
-qa_chain = RetrievalQA.from_chain_type(llm=llm, retriever=vectorstore.as_retriever())
+qa_chain = RetrievalQA.from_chain_type(
+    llm=llm,
+    retriever=vectorstore.as_retriever(),
+    memory=memory  # ✅ Ahora usa la memoria correctamente
+)
 
 # 🔹 Crear herramienta de búsqueda
 retrieval_tool = Tool(
@@ -97,17 +110,9 @@ retrieval_tool = Tool(
     description="Busca información en la base de datos de investigación de operaciones."
 )
 
-if retrieval_tool is None:
-    raise ValueError("❌ La herramienta de búsqueda no se ha inicializado correctamente.")
-
 tools = [retrieval_tool]
-if not tools:
-    raise ValueError("❌ No hay herramientas en la lista, el agente no podrá funcionar.")
 
-# 🔹 Crear memoria del chatbot
-memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
-
-# 🔹 Inicializar el agente con herramientas
+# 🔹 Inicializar el agente con herramientas y memoria
 agent = initialize_agent(
     tools=tools,
     llm=llm,
@@ -119,20 +124,33 @@ agent = initialize_agent(
 # 🔹 Interfaz en Streamlit
 st.title("🤖 Hillier/Lieberman Corner")
 
+# 🔹 Mostrar historial de conversación
+st.subheader("📜 Historial de conversación")
+for msg in st.session_state.chat_history:
+    st.markdown(f"**{msg['role'].capitalize()}:** {msg['content']}")
+
 user_input = st.text_input("✍️ What question do you have?")
 
 if user_input:
     try:
+        # 📌 Formatear historial para el prompt
+        chat_history_text = "\n".join(
+            [f"{msg['role']}: {msg['content']}" for msg in st.session_state.chat_history]
+        )
+
         # 📌 Generar el prompt con formato JSON obligatorio
-        formatted_prompt = prompt.format(question=user_input)
+        formatted_prompt = prompt.format(question=user_input, chat_history=chat_history_text)
 
         # 📌 Invocar el modelo
         response_text = llm.predict(formatted_prompt)
 
         # 📌 Parsear la respuesta en JSON estructurado
         response = parser.parse(response_text)
-
         output_text = response.output
+
+        # 📌 Guardar en el historial de conversación
+        st.session_state.chat_history.append({"role": "user", "content": user_input})
+        st.session_state.chat_history.append({"role": "assistant", "content": output_text})
 
     except json.JSONDecodeError:
         st.error("🚨 The model did not return a valid JSON response.")
@@ -144,3 +162,5 @@ if user_input:
 
     # 📌 Mostrar la respuesta en Markdown
     st.markdown(f"### 📖 Answer:\n{output_text}", unsafe_allow_html=True)
+
+

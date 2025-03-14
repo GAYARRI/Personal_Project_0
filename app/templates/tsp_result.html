@@ -1,41 +1,75 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Resultado TSP</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
-</head>
-<body>
-    <h1>Resultado del Problema del Viajante</h1>
 
-    <a href="{{ url_for('main.tsp') }}">Volver a Seleccionar Ciudades</a>
+<html lang="en"> <head> <meta charset="UTF-8"> <meta name="viewport" content="width=device-width, initial-scale=1.0"> <title>Resultado TSP</title> <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}"> <style> .contenedor { width: 100%; max-width: 800px; margin: 0 auto; text-align: center; }
+.tabla-container {
+        max-width: 600px;
+        max-height: 300px;
+        overflow: auto;
+        border: 1px solid #ddd;
+        margin: 0 auto;
+    }
 
-    <!-- Mapa Inicial con las ciudades seleccionadas -->
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 0 auto;
+    }
+
+    th, td {
+        padding: 5px;
+        text-align: center;
+        white-space: nowrap;
+        font-size: 1px;
+    }
+
+    th {
+        background-color: #f4f4f4;
+        position: sticky;
+        top: 0;
+        font-size: 1px;
+    }
+
+    iframe {
+        display: block;
+        margin: 0 auto;
+    }
+
+    button {
+        padding: 10px 20px;
+        font-size: 16px;
+        background-color: #28a745;
+        color: white;
+        border: none;
+        cursor: pointer;
+        margin-top: 20px;
+    }
+</style>
+
+</head> <body> <h1>Resultado del Problema del Viajante</h1>
+<a href="{{ url_for('main.tsp') }}">Volver a Seleccionar Ciudades</a>
+
     <div>
         <h2>Mapa de Ciudades Seleccionadas</h2>
-        <iframe src="{{ mapa }}" width="400" height="300"></iframe>
-    </div>
+        <iframe src="{{ mapa }}" width="600" height="300"></iframe>
 
-    <!-- Tabla de Distancias -->
-    <div>
-        <h4>Matriz de Distancias</h4>
+        <h2>Matriz de Distancias</h2>
         <div class="tabla-container">
             <table border="1">
                 <thead>
                     <tr>
-                        <th>Ciudad</th>
-                        {% for ciudad in ciudades %}
-                        <th>{{ ciudad }}</th>
-                        {% endfor %}
+                            <th style="font-size: 8px;">Ciudad</th>
+                            {% for ciudad in ciudades %}
+                                <th style="font-size: 8px;">{{ ciudad }}</th>
+                            {% endfor %}
+                        
                     </tr>
                 </thead>
                 <tbody>
                     {% for fila in matriz_con_indices %}
                     <tr>
-                        <td>{{ fila.ciudad }}</td>
+                        <td style="font-size: 8px;">{{ fila.ciudad }}</td>
                         {% for distancia in fila.distancias %}
-                        <td>{{ distancia }}</td>
+                        <td style="font-size: 8px;">{{ distancia }}</td>
                         {% endfor %}
                     </tr>
                     {% endfor %}
@@ -43,67 +77,34 @@
             </table>
         </div>
     </div>
-    
-    <style>
-        .tabla-container {
-            max-width: 400px; /* Limita el ancho de la tabla */
-            max-height: 200px; /* Limita la altura */
-            overflow: auto; /* Agrega desplazamiento si es necesario */
-            border: 1px solid #ddd; /* Borde sutil */
-        }
-    
-        table {
-            width: 100%; /* Se adapta al tamaño del contenedor */
-            border-collapse: collapse; /* Une los bordes */
-        }
-    
-        th, td {
-            padding: 5px;
-            text-align: center;
-            white-space: nowrap; /* Evita que el texto se divida en varias líneas */
-            font-size: 9px; /* 🔹 Controla el tamaño de la fuente */
-        }
-    
-        th {
-            background-color: #f4f4f4;
-            position: sticky;
-            top: 0;
-            font-size: 9px; /* 🔹 Tamaño de letra ligeramente más grande en los encabezados */
-        }
-    </style>
-    
-    <!-- Botón para resolver TSP -->
-    <div style="text-align: center; margin-top: 20px;">
-        <button id="resolverTSP" 
-                style="padding: 10px 20px; font-size: 16px; background-color: #28a745; color: white; border: none; cursor: pointer; margin-top: 20px;">
-            Resolver Ruta Optimizada
-        </button>
-        <div id="resultadoRuta" style="margin-top: 20px;"></div>
-    </div>
 
-    <!-- Contenedor para el mapa final con la ruta optimizada -->
-    <div id="mapaContainer" style="margin-top: 20px; text-align: center;"></div>
+    <button id="resolverTSP">Resolver Ruta</button>
+    <div id="resultadoRuta" style="margin-top: 20px;"></div>
 
-    <script>
+    <div id="mapaContainer" style="margin-top: 20px;"></div>
+</div>
+
+<script>
     document.getElementById("resolverTSP").addEventListener("click", function() {
         fetch("{{ url_for('main.resolver_tsp') }}", {
             method: "POST"
         })
         .then(response => response.json())
         .then(data => {
-            // Mostrar la ruta y la distancia total
             document.getElementById("resultadoRuta").innerHTML = `
                 <h3>Ruta Optimizada:</h3>
                 <p>${data.ruta.join(" → ")}</p>
-                <h3>Distancia Total Recorrida:</h3>
-                <p>${data.distancia_total} km</p>
-            `;
+                <h3 style="display: inline;">Distancia en Kilómetros recorrida: </h3>
+                <span style="display: inline;">${data.distancia_total}</span>
+                
+            `;    
 
-            // Crear el iframe para el mapa generado
             const iframe = document.createElement("iframe");
             iframe.src = `{{ url_for('static', filename='mapa_ruta_optima.html') }}`;
-            iframe.width = "400";
-            iframe.height = "200";
+            iframe.width = "600";
+            iframe.height = "300";
+            iframe.style.display = "block";
+            iframe.style.margin = "0 auto";
             document.getElementById("mapaContainer").appendChild(iframe);
         })
         .catch(error => console.error("Error:", error));
@@ -111,4 +112,3 @@
     </script>
 </body>
 </html>
-
