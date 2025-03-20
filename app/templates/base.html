@@ -9,11 +9,11 @@
         /* Imagen en la parte superior derecha */
         .imagen-circular {
             position: absolute;
-            top: 25px;
+            top: 5px;
             left: 35%;
             max-width: 150px;
-            width: 120%;
-            border-radius: 50%; /* Hace que la imagen sea completamente circular */
+            width: 150%;
+            border-radius: 100%; /* Hace que la imagen sea completamente circular */
             object-fit: cover; /* Ajusta la imagen sin distorsionarla */
             object-position: 100%;
             display: block;
@@ -31,7 +31,7 @@
 <body>
     <header>
         <button onclick="window.location.href='/'">Inicio</button>
-        <img src="{{ url_for('static', filename='img/jarg2.png') }}" class="imagen-circular"><br><br>
+        <img src="{{ url_for('static', filename='img/Logo_AV6.png') }}" class="imagen-circular"><br><br>
         <script>
             // Verifica si la URL actual es la página de inicio
                if (window.location.pathname === "/" || window.location.pathname === "/index.html") {

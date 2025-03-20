@@ -73,11 +73,14 @@
     <div class="button-container">
         <h2>Subir Imágenes del Cubo</h2>
         <form id="uploadForm" action="/upload-rubik" method="POST" enctype="multipart/form-data">
-            <label for="files[]">Selecciona las 6 imágenes en el orden indicado:</label>
+            <label for="files[]">Selecciona las 6 imágenes del cubo:</label>
             <input type="file" name="files[]" accept="image/*" multiple required>
             <button type="submit">Subir Imágenes</button>
         </form>
     </div>
+
+
+  
 
     {% if message %}
         <div id="message-box" style="text-align: center; background-color: #dff0d8; padding: 10px; border-radius: 5px; margin-top: 10px;">
@@ -101,8 +104,15 @@
             <button type="submit">Procesar Cubo</button>
         </form>
     </div>
+    <div class="button-container">
+        <!-- Botón para procesar la manzana -->
+        <form action="/procesar_manzana" method="get">
+            <button type="submit">Procesar Rompecabezas Manzana </button>
+        </form>
+    </div> 
 
-    {% if estado_cubo %}
+
+    {% if estado_cubo and es_cubo %}
         <h2 style="text-align: center;">Estado Detectado del Cubo</h2>
         <table class="tabla-cubo">  <!-- Ahora ocupa solo el 25% y está centrada -->
             <tr>
@@ -128,6 +138,7 @@
         </table>      
     {% endif %}
 
+
     {% if secuencia_cubo %}
         <h2 style="text-align: center;">Secuencia del Cubo</h2>
         <table class="tabla-cubo">  <!-- También centrado y ajustado -->
@@ -141,17 +152,32 @@
 
     <div class="button-container">
         <form id="resolverForm" action="{{ url_for('main.resolver_cubo') }}" method="post">
-            <input type="hidden" id="secuencia_cubo" name="secuencia_cubo" value='{{ secuencia_cubo | tojson | safe }}'>
+            {% if secuencia_cubo %}
+                <input type="hidden" id="secuencia_cubo" name="secuencia_cubo" value='{{ secuencia_cubo | tojson | safe }}'>
+            {% endif %}    
             <button type="submit">Resolver Cubo</button>
         </form>
     </div>
+
+    <div class="button-container">
+        <form action="/resolver-manzana" method="post">
+            <button type="submit">Resolver Rompecabezas Manzana</button>
+        </form>
+    </div>
+
     
-    {% if solucion %}
+    {% if solucion and es_cubo %}
         <h2 style="text-align: center;">Solución del Cubo</h2>
         <pre style="text-align: center; font-size: 18px; font-weight: bold;">{{ solucion }}</pre>
     {% else %}
         <p style="text-align: center;">❌ No se pudo generar una solución válida.</p>
     {% endif %}  
+
+    {% if solucion %}
+        <h2 style="text-align: center;">Solución del Rompecabezas Manzana</h2>
+        <pre style="text-align: center; font-size: 18px; font-weight: bold;">{{ solucion }}</pre>
+    {% endif %}
+
 
 </body>
 </html>

@@ -39,6 +39,11 @@ import statsmodels.api as sm
 from statsmodels.tsa.statespace.sarimax import SARIMAX
 from statsmodels.tsa.arima.model import ARIMA
 from statsmodels.tsa.stattools import acf, pacf
+import pycuber as pc
+from pycuber.solver import CFOPSolver        
+import json        
+import ast
+
 
 
 
@@ -554,20 +559,26 @@ def procesar_cubo():
             # ✅ Llamada a la API de OpenAI para análisis de colores
             response = client.chat.completions.create(
                 model="gpt-4.5-preview",
-                messages=[
-                    {"role": "system", "content": "Eres un asistente experto en cubos de Rubik."},
-                    {"role": "user", "content": "Analiza esta imagen y detecta los 9 colores en una cuadrícula 3x3. Devuelve el resultado en JSON con la estructura: "
-                                                 f"{{'{cara_sin_extension}': [['color1', 'color2', 'color3'], ['color4', 'color5', 'color6'], ['color7', 'color8', 'color9']]}}"},
-                    {
-                        "role": "user",
-                        "content": [
-                            {"type": "text", "text": "Aquí está la imagen del cubo de Rubik:"},
-                            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_base64}"}}
-                        ]
-                    }
-                ],
-                temperature=0.1
-            )
+            messages=[
+            {"role": "system", "content": "Eres un asistente experto en cubos de Rubik. Tu tarea es detectar colores en imágenes de cubos, usando solo colores estándar."},
+            {"role": "user", "content": 
+            f"Analiza esta imagen de una cara del cubo Rubik y detecta los 9 colores en una cuadrícula 3x3. "
+            f"Utiliza únicamente estos colores: red, blue, green, yellow, white, orange, pink. "
+            f"Devuelve el resultado en formato JSON con esta estructura EXACTA:\n\n"
+            f"{{'{cara_sin_extension}': [['red', 'blue', 'green'], ['yellow', 'white', 'orange'], ['red', 'green', 'blue']]}}\n\n"
+            f"Asegúrate de devolver un JSON válido, sin explicaciones ni comentarios."
+        },
+        {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": "Aquí está la imagen del cubo de Rubik:"},
+                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_base64}"}}
+            ]
+        }
+    ],
+    temperature=0  # Mantener temperatura BAJA para precisión
+)    
+            
 
             # ✅ Procesar respuesta de OpenAI
             if response.choices:
@@ -592,22 +603,66 @@ def procesar_cubo():
 
     print(f"✅ SECUENCIA CUBO ENVIADA A rubik.html: {secuencia_cubo}")  # Depuración
 
-    return render_template("rubik.html", estado_cubo=resultados, secuencia_cubo=secuencia_cubo)
+    return render_template("rubik.html", estado_cubo=resultados, secuencia_cubo=secuencia_cubo,es_cubo=True)
+
+
+        
 
 
 
 def detectar_colores_con_vision(imagen_path):
-    """
-    Detecta colores en una imagen usando OpenCV. 
-    Devuelve un JSON con la estructura adecuada para los colores detectados en un cubo de Rubik.
-    """
-    # Leer la imagen con OpenCV
+    import cv2
+    import numpy as np
+    from colorthief import ColorThief
+    import webcolors
+
     img = cv2.imread(imagen_path)
     if img is None:
-       print(f"❌ No se pudo cargar la imagen: {imagen_path}")
-       return None
-    img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        print(f"\u274c No se pudo cargar la imagen: {imagen_path}")
+        return None
+
+    h, w, _ = img.shape
+    grid_size = 3
+    cell_h, cell_w = h // grid_size, w // grid_size
+
+    resultado = []
+    for i in range(grid_size):
+        fila = []
+        for j in range(grid_size):
+            cell = img[i*cell_h:(i+1)*cell_h, j*cell_w:(j+1)*cell_w]
+            temp_file = f"temp_cell_{i}_{j}.jpg"
+            cv2.imwrite(temp_file, cell)
+
+            try:
+                color_thief = ColorThief(temp_file)
+                rgb = color_thief.get_color(quality=1)
+                nombre_color = rgb_a_nombre_color(rgb)
+                fila.append(nombre_color)
+            except Exception as e:
+                print(f"Error con ColorThief en celda ({i},{j}): {e}")
+                fila.append("unknown")
+
+            os.remove(temp_file)
+        resultado.append(fila)
+
+    return resultado
     
+def rgb_a_nombre_color(rgb):
+    import webcolors
+    try:
+        return webcolors.rgb_to_name(rgb)
+    except ValueError:
+        min_distancia = float('inf')
+        nombre_cercano = ""
+        for nombre, valor in webcolors.CSS3_NAMES_TO_HEX.items():
+            valor_rgb = webcolors.hex_to_rgb(valor)
+            distancia = sum((a - b) ** 2 for a, b in zip(rgb, valor_rgb))
+            if distancia < min_distancia:
+                min_distancia = distancia
+                nombre_cercano = nombre
+        return nombre_cercano
+
+
    
 
 def encode_image(image_path):
@@ -642,9 +697,6 @@ def generar_secuencia_estado(jsoncubo):
         # Devolver el JSON con la secuencia de colores
         return {"secuencia_estado": secuencia_estado}
 
-    # Definir carpeta de subida
-UPLOAD_FOLDER = "app/static/uploads"
-ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png'}
 
     # ✅ Verifica si un archivo tiene una extensión válida
 def allowed_file(filename):
@@ -673,9 +725,6 @@ def upload_rubik_images():
 
         return render_template("rubik.html", message="✅ Imágenes subidas correctamente.",secuencia_cubo ="na",solucion="na")
 
-import pycuber as pc
-from pycuber.solver import CFOPSolver        
-import json        
 
 @main.route('/resolver-cubo', methods=['POST'])
 def resolver_cubo():
@@ -731,7 +780,7 @@ def resolver_cubo():
 
         # Redirigir a la página de solución con la solución como parámetro
         print(f"🔍 SOLUCIÓN PASADA A rubik.html: {(solucion)}")  # Depuración
-        return render_template("rubik.html", secuencia_cubo=estado_cubo, solucion=solucion) 
+        return render_template("rubik.html", secuencia_cubo=estado_cubo, solucion=solucion,es_cubo=True) 
 
     except Exception as e:
         # Manejo de errores generales
@@ -746,12 +795,12 @@ def convertir_colores_a_movimientos(secuencia_colores):
     caras = ["B", "D", "F", "L", "R", "U"]  # Ajusta este orden si es necesario
 
     color_cara = {
-        secuencia_colores[4]: "B",  # Cara superior
+        secuencia_colores[4]: "B",  # Cara trasera
         secuencia_colores[13]: "D",  # Cara inferior
         secuencia_colores[22]: "F",  # Cara frontal
         secuencia_colores[31]: "L",  # Cara izquierda
         secuencia_colores[40]: "R",  # Cara derecha
-        secuencia_colores[49]: "U"   # Cara trasera
+        secuencia_colores[49]: "U"   # Cara superior 
     }
     
     secuencia_movimientos = []
@@ -763,6 +812,173 @@ def convertir_colores_a_movimientos(secuencia_colores):
 
 docx_filename="Gracias.docx"
 docx_path=os.path.join(os.getcwd(), "app", "static","uploads", docx_filename)
+
+def limpiar_json(respuesta):
+    """Extrae y limpia el bloque JSON de una respuesta con posibles delimitadores y texto adicional."""
+    match = re.search(r"\{.*\}", respuesta, re.DOTALL)
+    if match:
+        return match.group(0).strip()
+    return respuesta.strip()
+
+
+@main.route('/procesar_manzana', methods=['GET'])
+def procesar_manzana():
+    carpeta = "./app/static/uploads"
+    resultados = {}
+
+    if not os.path.exists(carpeta):
+        return jsonify({"error": "No se encontraron imágenes en la carpeta."}), 400
+
+    for cara in os.listdir(carpeta):
+        ruta_completa = os.path.join(carpeta, cara)
+        cara_sin_extension = os.path.splitext(cara)[0]
+
+        if os.path.isfile(ruta_completa):
+            image_base64 = encode_image(ruta_completa)
+            procesado_exitoso = False
+
+            try:
+                response = client.chat.completions.create(
+                    model="gpt-4.5-preview",
+                    messages=[
+                      {"role": "system", "content":
+                           "Eres un experto en analizar rompecabezas mecánicos tridimensionales. La imagen contiene una cara de una manzana tridimensional de plástico, dividida en 9 piezas móviles dispuestas en una cuadrícula 3x3."},
+                      {"role": "user", "content":
+                           f"Analiza la imagen y determina qué pieza (P1 a P9) está ubicada en cada una de las 9 posiciones de la cuadrícula 3x3 y su orientación actual (0°, 90°, 180°, 270°). "
+                           f"Devuelve la información solo en formato JSON estructurado como este ejemplo:\n\n"
+                           f"{{'{cara_sin_extension}': [['P4_90', 'P2_0', 'P1_180'], ['P5_0', 'P6_0', 'P3_0'], ['P7_0', 'P8_270', 'P9_0']]}}\n\n"
+                           f"No incluyas explicaciones ni texto adicional, solo el JSON."
+                      },
+                      {"role": "user", "content": [
+                         {"type": "text", "text": "La imagen contiene solo un objeto mecánico (sin personas ni elementos sensibles)."},
+                         {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_base64}"}}
+        ]}
+    ],
+                    temperature=0
+                )
+
+                if response.choices:
+                    content = response.choices[0].message.content.strip()
+                    if content:
+                        try:
+                            content_cleaned = limpiar_json(content)
+                            try:
+                                json_response = json.loads(content_cleaned)
+                            except json.JSONDecodeError:
+                                print(f"⚠️ JSON inválido, intentando ast.literal_eval para {cara_sin_extension}")
+                                json_response = ast.literal_eval(content_cleaned)
+
+                            resultados[cara_sin_extension] = json_response[cara_sin_extension]
+                            procesado_exitoso = True
+                        except Exception as e:
+                            print(f"❌ Error al parsear JSON para {cara_sin_extension}: {e}")
+                            print(f"Contenido recibido: '{content}'")
+                    else:
+                        print(f"⚠️ Respuesta vacía para: {cara}")
+                else:
+                    print(f"⚠️ No se recibió respuesta válida para: {cara}")
+
+            except Exception as e:
+                print(f"❌ Error OpenAI para {cara}: {e}")
+
+            if not procesado_exitoso:
+                print(f"⚠️ No se pudo procesar la imagen de la cara: {cara}")
+
+    if resultados:
+        secuencia_manzana = generar_secuencia_estado(resultados)
+    else:
+        secuencia_manzana = {"secuencia_estado": ""}
+
+    session['estado_manzana'] = resultados
+
+    return render_template("rubik.html", estado_cubo=resultados, secuencia_cubo=secuencia_manzana,es_cubo=False)
+
+
+# 2. FUNCION PARA GENERAR SECUENCIA
+
+def generar_secuencia_estado(json_manzana):
+    secuencia_estado = ""
+    for cara in json_manzana.keys():
+        for fila in json_manzana[cara]:
+            for pieza in fila:
+                secuencia_estado += pieza + "-"
+    return {"secuencia_estado": secuencia_estado.rstrip("-")}
+
+
+# 3. RUTA PARA RESOLVER LA MANZANA CON MENSAJE DE ERROR
+@main.route('/resolver-manzana', methods=['POST'])
+def resolver_manzana():
+    if 'estado_manzana' not in session:
+        flash("⚠️ No hay estado de manzana cargado.", "error")
+        return redirect(url_for('main.rubik_home'))
+
+    estado_manzana = session['estado_manzana']
+    secuencia_estado = generar_secuencia_estado(estado_manzana)["secuencia_estado"]
+
+    try:
+        piezas = secuencia_estado.split("-")
+        color_map = {}
+        current_char = ord('A')
+        secuencia_colores = ""
+
+        for pieza in piezas:
+            pieza_id = pieza.split('_')[0]
+            if pieza_id not in color_map:
+                color_map[pieza_id] = chr(current_char)
+                current_char += 1
+            secuencia_colores += color_map[pieza_id]
+
+        print(f"✅ Secuencia colores ficticios: {secuencia_colores}")
+
+        
+
+        # Convertir la secuencia de colores a movimientos de Rubik
+        secuencia_movimientos = convertir_colores_a_movimientos(secuencia_colores)
+
+        # Inicializar el cubo y aplicar los movimientosd   
+
+        cubo = pc.Cube()
+        for movimiento in secuencia_movimientos:
+            cubo(movimiento)
+
+
+        solver = CFOPSolver(cubo)
+        solucion = solver.solve()
+        solucion_str = " ".join(str(m) for m in solucion)
+
+        return render_template("rubik.html", solucion=solucion_str,es_cubo=False)
+
+    except Exception as e:
+        flash(f"❌ Error al resolver: {str(e)}", "error")
+        return redirect(url_for('main.rubik_home'))     
+
+
+# 4. FUNCION PARA CONVERTIR A ESTADO RUBIK
+
+def convertir_a_estado_rubik(estado_manzana):
+    pieza_color_map = {}
+    colores = ['U', 'R', 'F', 'D', 'L', 'B']
+    index = 0
+
+    for cara in estado_manzana:
+        for fila in estado_manzana[cara]:
+            for pieza in fila:
+                pieza_id = pieza.split('_')[0] if '_' in pieza else pieza
+                if pieza_id not in pieza_color_map:
+                    pieza_color_map[pieza_id] = colores[index % 6]
+                    index += 1
+
+    orden_caras = ['UP', 'RIGHT', 'FRONT', 'DOWN', 'LEFT', 'BACK']
+    estado = ''
+
+    for cara in orden_caras:
+        for fila in estado_manzana.get(cara, []):
+            for pieza in fila:
+                pieza_id = pieza.split('_')[0] if '_' in pieza else pieza
+                estado += pieza_color_map.get(pieza_id, 'U')
+
+    return estado
+
 
 
 @main.route("/ver-documento")
@@ -926,6 +1142,7 @@ def sarima():
     # 2. Residuos del Modelo
     fig, ax = plt.subplots(figsize=(10, 4))
     ax.plot(df.index, residuals, label='Residuos', color='purple')
+    ax.set_ylim(-10, 10)  # Ajusta el rango vertical de los residuos
     ax.set_title('Residuos del Modelo')
     ax.set_xlabel('Fecha')
     ax.set_ylabel('Residuo')
