@@ -6,6 +6,8 @@
 
 <!DOCTYPE html>
 <html lang="es"> 
+
+    
 <head>
     <br>
     <meta charset="UTF-8">
@@ -54,7 +56,8 @@
     </style>
 </head>
 <body>
-    
+
+
     <h1 style="text-align: center;">Rubik's Cube</h1>
 
     <!-- Tabla de referencia visual -->
@@ -106,7 +109,7 @@
     </div>
     <div class="button-container">
         <!-- Botón para procesar la manzana -->
-        <form action="/procesar_manzana" method="get">
+        <form action="{{ url_for('main.procesar_manzana') }}" method="get">
             <button type="submit">Procesar Rompecabezas Manzana </button>
         </form>
     </div> 
@@ -139,16 +142,72 @@
     {% endif %}
 
 
-    {% if secuencia_cubo %}
-        <h2 style="text-align: center;">Secuencia del Cubo</h2>
-        <table class="tabla-cubo">  <!-- También centrado y ajustado -->
+    {% if es_cubo and estado_cubo %}
+        <h2 style="text-align: center;">🧩 Estado del Cubo Rubik</h2>
+        <table class="tabla-cubo">
             <tr>
                 <td class="output">
-                    <pre>{{ secuencia_cubo }}</pre>
-                </td> 
+                    <pre>{{ estado_cubo }}</pre>
+                </td>
+            </tr>
+        </table>
+    {% elif not es_cubo and estado_cubo %}
+        <h2 style="text-align: center;">🍎 Estado de la Manzana</h2>
+        <table class="tabla-cubo">
+            <tr>
+                <td class="output">
+                    <pre>{{ estado_colores }}</pre>
+                </td>
             </tr>
         </table>
     {% endif %}
+
+     
+    {% if estado_cubo and not es_cubo %}
+        <h3 style="text-align:center;">🧩 Estado de la manzana detectado</h3>
+        <div style="display: flex; flex-direction: column; align-items: center; font-family: monospace;">
+           {% for cara, filas in estado_cubo.items() %}
+              <div style="margin-top: 1em; text-align: center;">
+                <strong>{{ cara }}</strong>
+                <table style="margin: auto; border-collapse: collapse;">
+                  {% for fila in filas %}
+                    <tr>
+                      {% for pieza in fila %}
+                           <td style="border: 1px solid #ccc; padding: 5px;">{{ pieza }}</td>
+                      {% endfor %}
+                    </tr>
+                  {% endfor %}
+                </table>
+              </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+    
+    {% if estado_colores and not es_cubo %}
+        <h3 style="text-align: center;">🎨 Estado de colores generado (Manzana)</h3>
+        {% set colores = estado_colores %}
+            {% if colores|length == 54 %}
+                <div style="font-family: monospace; display: flex; flex-direction: column; align-items: center;">
+                    <!-- UP -->
+                    <div style="margin-bottom: 1em;"><strong>UP</strong><br>{{ colores[0:3] }}<br>{{ colores[3:6] }}<br>{{ colores[6:9] }}</div>
+
+                    <!-- MIDDLE (LEFT, FRONT, RIGHT, BACK) -->
+                    <div style="display: flex; justify-content: center; gap: 2em;">
+                        <div><strong>LEFT</strong><br>{{ colores[36:39] }}<br>{{ colores[39:42] }}<br>{{ colores[42:45] }}</div>
+                        <div><strong>FRONT</strong><br>{{ colores[18:21] }}<br>{{ colores[21:24] }}<br>{{ colores[24:27] }}</div>
+                        <div><strong>RIGHT</strong><br>{{ colores[9:12] }}<br>{{ colores[12:15] }}<br>{{ colores[15:18] }}</div>
+                        <div><strong>BACK</strong><br>{{ colores[45:48] }}<br>{{ colores[48:51] }}<br>{{ colores[51:54] }}</div>
+                    </div>
+
+                    <!-- DOWN -->
+                    <div style="margin-top: 1em;"><strong>DOWN</strong><br>{{ colores[27:30] }}<br>{{ colores[30:33] }}<br>{{ colores[33:36] }}</div>
+                </div>
+            {% else %}
+            <p style="color: red;">❌ Error: La secuencia de colores no tiene 54 caracteres.</p>
+        {% endif %}
+    {% endif %}
+
+
 
     <div class="button-container">
         <form id="resolverForm" action="{{ url_for('main.resolver_cubo') }}" method="post">
@@ -173,7 +232,7 @@
         <p style="text-align: center;">❌ No se pudo generar una solución válida.</p>
     {% endif %}  
 
-    {% if solucion %}
+    {% if solucion and not es_cubo %}
         <h2 style="text-align: center;">Solución del Rompecabezas Manzana</h2>
         <pre style="text-align: center; font-size: 18px; font-weight: bold;">{{ solucion }}</pre>
     {% endif %}

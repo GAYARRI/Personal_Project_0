@@ -1,3 +1,7 @@
+import os
+import certifi
+os.environ["SSL_CERT_FILE"] = certifi.where()
+
 from flask import Blueprint, render_template, request, redirect, url_for, Flask
 from flask import jsonify,flash
 from datetime import datetime
@@ -43,6 +47,16 @@ import pycuber as pc
 from pycuber.solver import CFOPSolver        
 import json        
 import ast
+from colorthief import ColorThief # type: ignor
+import cv2
+import webcolors
+from flask import flash, redirect, url_for, render_template
+from flask import flash, redirect, url_for, render_template, session
+import pycuber as pc
+from pycuber.solver import CFOPSolver
+
+
+
 
 
 
@@ -509,6 +523,12 @@ def ruta_optima():
 
 # ✅ Página principal
 
+
+docx_filename="Gracias.docx"
+docx_path=os.path.join(os.getcwd(), "app", "static","uploads", docx_filename)
+# --- LIMPIAR JSON ---
+# ✅ Página principal
+
 @main.route('/rubik', methods=['GET'])
 def rubik_home():
     return render_template('rubik.html',secuencia_cubo={})
@@ -543,6 +563,11 @@ client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 @main.route('/procesar-cubo', methods=['GET'])
 def procesar_cubo():
+    import sys
+    sys.stdout.write("🔥 Este print forzado aparece\n")
+    sys.stdout.flush()
+
+
     carpeta = "./app/static/uploads"
     resultados = {}
 
@@ -611,10 +636,6 @@ def procesar_cubo():
 
 
 def detectar_colores_con_vision(imagen_path):
-    import cv2
-    import numpy as np
-    from colorthief import ColorThief
-    import webcolors
 
     img = cv2.imread(imagen_path)
     if img is None:
@@ -648,7 +669,6 @@ def detectar_colores_con_vision(imagen_path):
     return resultado
     
 def rgb_a_nombre_color(rgb):
-    import webcolors
     try:
         return webcolors.rgb_to_name(rgb)
     except ValueError:
@@ -810,8 +830,7 @@ def convertir_colores_a_movimientos(secuencia_colores):
     
     return "".join(secuencia_movimientos)
 
-docx_filename="Gracias.docx"
-docx_path=os.path.join(os.getcwd(), "app", "static","uploads", docx_filename)
+##############################################################
 
 def limpiar_json(respuesta):
     """Extrae y limpia el bloque JSON de una respuesta con posibles delimitadores y texto adicional."""
@@ -820,9 +839,35 @@ def limpiar_json(respuesta):
         return match.group(0).strip()
     return respuesta.strip()
 
+# --- OBTENER COLOR DE PIEZA EN UNA CARA ---
+def obtener_color_visible(pieza_id, cara_actual):
+    color = color_por_pieza_cara.get((pieza_id, cara_actual), 'x')
+    if color == 'x':
+        print(f"⚠️ Color no encontrado para pieza {pieza_id} en cara {cara_actual}")
+    return color
+
+
+# Construye el estado final de 54 stickers con colores correctos
+def construir_estado_rubik_desde_manzana(estado_manzana):
+    orden_caras = ['UP', 'RIGHT', 'FRONT', 'DOWN', 'LEFT', 'BACK']
+    estado = ''
+
+    for cara in orden_caras:
+        if cara not in estado_manzana:
+            print(f"⚠️ Cara ausente: {cara}")
+        for fila in estado_manzana.get(cara, []):
+            for pieza in fila:
+                pieza_id = pieza.split('_')[0].upper()
+                color = obtener_color_visible(pieza_id, cara)
+                print(f"🧩 {cara} | {pieza} → {color}")
+                estado += color
+
+    print(f"🎯 Estado final generado: {estado} (long: {len(estado)})")
+    return estado
 
 @main.route('/procesar_manzana', methods=['GET'])
 def procesar_manzana():
+ 
     carpeta = "./app/static/uploads"
     resultados = {}
 
@@ -831,154 +876,220 @@ def procesar_manzana():
 
     for cara in os.listdir(carpeta):
         ruta_completa = os.path.join(carpeta, cara)
-        cara_sin_extension = os.path.splitext(cara)[0]
+        cara_sin_extension = os.path.splitext(cara)[0].upper()
 
         if os.path.isfile(ruta_completa):
             image_base64 = encode_image(ruta_completa)
-            procesado_exitoso = False
-
             try:
                 response = client.chat.completions.create(
                     model="gpt-4.5-preview",
                     messages=[
-                      {"role": "system", "content":
-                           "Eres un experto en analizar rompecabezas mecánicos tridimensionales. La imagen contiene una cara de una manzana tridimensional de plástico, dividida en 9 piezas móviles dispuestas en una cuadrícula 3x3."},
-                      {"role": "user", "content":
-                           f"Analiza la imagen y determina qué pieza (P1 a P9) está ubicada en cada una de las 9 posiciones de la cuadrícula 3x3 y su orientación actual (0°, 90°, 180°, 270°). "
-                           f"Devuelve la información solo en formato JSON estructurado como este ejemplo:\n\n"
-                           f"{{'{cara_sin_extension}': [['P4_90', 'P2_0', 'P1_180'], ['P5_0', 'P6_0', 'P3_0'], ['P7_0', 'P8_270', 'P9_0']]}}\n\n"
-                           f"No incluyas explicaciones ni texto adicional, solo el JSON."
-                      },
-                      {"role": "user", "content": [
-                         {"type": "text", "text": "La imagen contiene solo un objeto mecánico (sin personas ni elementos sensibles)."},
-                         {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_base64}"}}
-        ]}
-    ],
+                        {"role": "system", "content": "Eres un experto en rompecabezas 3D como cubos o manzanas."},
+                        {"role": "user", "content": f"Analiza esta imagen de una cara tridimensional dividida en 9 piezas. Devuelve solo JSON con etiquetas P1–P9 y rotación (ej: P1_0). Formato: {{'{cara_sin_extension}': [['P1_0', ..., 'P3_180'], ..., ['P7_0', ..., 'P9_90']]}}"},
+                        {"role": "user", "content": [
+                            {"type": "text", "text": "Aquí está la imagen:"},
+                            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_base64}"}}
+                        ]}
+                    ],
                     temperature=0
                 )
-
-                if response.choices:
-                    content = response.choices[0].message.content.strip()
-                    if content:
-                        try:
-                            content_cleaned = limpiar_json(content)
-                            try:
-                                json_response = json.loads(content_cleaned)
-                            except json.JSONDecodeError:
-                                print(f"⚠️ JSON inválido, intentando ast.literal_eval para {cara_sin_extension}")
-                                json_response = ast.literal_eval(content_cleaned)
-
-                            resultados[cara_sin_extension] = json_response[cara_sin_extension]
-                            procesado_exitoso = True
-                        except Exception as e:
-                            print(f"❌ Error al parsear JSON para {cara_sin_extension}: {e}")
-                            print(f"Contenido recibido: '{content}'")
-                    else:
-                        print(f"⚠️ Respuesta vacía para: {cara}")
-                else:
-                    print(f"⚠️ No se recibió respuesta válida para: {cara}")
-
+                content = response.choices[0].message.content.strip()
+                if content:
+                    try:
+                        json_data = json.loads(limpiar_json(content))
+                        resultados[cara_sin_extension] = json_data.get(cara_sin_extension, [])
+                        
+                    except Exception as e:
+                        print(f"⚠️ Error en {cara_sin_extension}: {e}")
             except Exception as e:
-                print(f"❌ Error OpenAI para {cara}: {e}")
-
-            if not procesado_exitoso:
-                print(f"⚠️ No se pudo procesar la imagen de la cara: {cara}")
-
-    if resultados:
-        secuencia_manzana = generar_secuencia_estado(resultados)
-    else:
-        secuencia_manzana = {"secuencia_estado": ""}
+                print(f"❌ Error OpenAI para {cara_sin_extension}: {e}")
 
     session['estado_manzana'] = resultados
+    estado_colores = construir_estado_rubik_desde_manzana(resultados) if resultados else ""
 
-    return render_template("rubik.html", estado_cubo=resultados, secuencia_cubo=secuencia_manzana,es_cubo=False)
-
-
-# 2. FUNCION PARA GENERAR SECUENCIA
-
-def generar_secuencia_estado(json_manzana):
-    secuencia_estado = ""
-    for cara in json_manzana.keys():
-        for fila in json_manzana[cara]:
-            for pieza in fila:
-                secuencia_estado += pieza + "-"
-    return {"secuencia_estado": secuencia_estado.rstrip("-")}
+    print(f"estado_colores = {estado_colores}")
 
 
-# 3. RUTA PARA RESOLVER LA MANZANA CON MENSAJE DE ERROR
+    return render_template("rubik.html",estado_manzana=resultados,estado_colores=estado_colores, es_cubo=False)
+
+# --- MAPEOS CLAROS DE PIEZA + CARA A COLOR ---
+color_por_pieza_cara = {
+    # UP face (white)
+    ('P1', 'UP'): 'w', ('P2', 'UP'): 'w', ('P3', 'UP'): 'w',
+    ('P4', 'UP'): 'w', ('P5', 'UP'): 'w', ('P6', 'UP'): 'w',
+    ('P7', 'UP'): 'w', ('P8', 'UP'): 'w', ('P9', 'UP'): 'w',
+
+    # DOWN face (yellow)
+    ('P1', 'DOWN'): 'y', ('P2', 'DOWN'): 'y', ('P3', 'DOWN'): 'y',
+    ('P4', 'DOWN'): 'y', ('P5', 'DOWN'): 'y', ('P6', 'DOWN'): 'y',
+    ('P7', 'DOWN'): 'y', ('P8', 'DOWN'): 'y', ('P9', 'DOWN'): 'y',
+
+    # FRONT face (blue)
+    ('P1', 'FRONT'): 'b', ('P2', 'FRONT'): 'b', ('P3', 'FRONT'): 'b',
+    ('P4', 'FRONT'): 'b', ('P5', 'FRONT'): 'b', ('P6', 'FRONT'): 'b',
+    ('P7', 'FRONT'): 'b', ('P8', 'FRONT'): 'b', ('P9', 'FRONT'): 'b',
+
+    # BACK face (green)
+    ('P1', 'BACK'): 'g', ('P2', 'BACK'): 'g', ('P3', 'BACK'): 'g',
+    ('P4', 'BACK'): 'g', ('P5', 'BACK'): 'g', ('P6', 'BACK'): 'g',
+    ('P7', 'BACK'): 'g', ('P8', 'BACK'): 'g', ('P9', 'BACK'): 'g',
+
+    # LEFT face (orange)
+    ('P1', 'LEFT'): 'o', ('P2', 'LEFT'): 'o', ('P3', 'LEFT'): 'o',
+    ('P4', 'LEFT'): 'o', ('P5', 'LEFT'): 'o', ('P6', 'LEFT'): 'o',
+    ('P7', 'LEFT'): 'o', ('P8', 'LEFT'): 'o', ('P9', 'LEFT'): 'o',
+
+    # RIGHT face (red)
+    ('P1', 'RIGHT'): 'r', ('P2', 'RIGHT'): 'r', ('P3', 'RIGHT'): 'r',
+    ('P4', 'RIGHT'): 'r', ('P5', 'RIGHT'): 'r', ('P6', 'RIGHT'): 'r',
+    ('P7', 'RIGHT'): 'r', ('P8', 'RIGHT'): 'r', ('P9', 'RIGHT'): 'r',
+
+}
+pieza_colores = {
+    'P1': {'UP': 'w', 'LEFT': 'o', 'BACK': 'g'},
+    'P2': {'UP': 'w', 'BACK': 'g'},
+    'P3': {'UP': 'w', 'RIGHT': 'r', 'BACK': 'g'},
+    'P4': {'UP': 'w', 'LEFT': 'o'},
+    'P5': {'UP': 'w', 'DOWN': 'y'},
+    'P6': {'UP': 'w', 'RIGHT': 'r'},
+    'P7': {'UP': 'w', 'LEFT': 'o', 'FRONT': 'b'},
+    'P8': {'UP': 'w', 'FRONT': 'b'},
+    'P9': {'UP': 'w', 'RIGHT': 'r', 'FRONT': 'b'},
+
+    'P1b': {'DOWN': 'y', 'LEFT': 'o', 'BACK': 'g'},
+    'P2b': {'DOWN': 'y', 'BACK': 'g'},
+    'P3b': {'DOWN': 'y', 'RIGHT': 'r', 'BACK': 'g'},
+    'P4b': {'DOWN': 'y', 'LEFT': 'o'},
+    'P5b': {'DOWN': 'y'},
+    'P6b': {'DOWN': 'y', 'RIGHT': 'r'},
+    'P7b': {'DOWN': 'y', 'LEFT': 'o', 'FRONT': 'b'},
+    'P8b': {'DOWN': 'y', 'FRONT': 'b'},
+    'P9b': {'DOWN': 'y', 'RIGHT': 'r', 'FRONT': 'b'},
+}
+
+def construir_cubo_desde_estado(estado_colores):
+    from pycuber import Cube
+    # Verificación robusta del tipo de input
+    if not isinstance(estado_colores, str):
+        raise TypeError(f"❌ Error: estado_colores debe ser str, no {type(estado_colores)}")
+
+    if len(estado_colores) != 54:
+        raise ValueError("El estado debe tener exactamente 54 caracteres")
+
+    cubo = Cube()
+    caras = ['U', 'R', 'F', 'D', 'L', 'B']
+    mapping = {
+        'w': 'white',
+        'r': 'red',
+        'b': 'blue',
+        'g': 'green',
+        'y': 'yellow',
+        'o': 'orange'
+    }
+
+    # Asignar colores a cada cara en orden URFDLB
+    index = 0
+    for cara in caras:
+        face = cubo[cara]
+        for i in range(3):
+            for j in range(3):
+                letra_raw=estado_colores[index]                
+                print(f"🔎 index={index} | valor bruto={letra_raw} | tipo={type(letra_raw)}")
+
+                if not isinstance(letra_raw, str):
+                    raise TypeError(f"❌ Esperado str en estado_colores[{index}], recibido {type(letra_raw)}")
+
+                letra = letra_raw.lower()
+                if letra not in mapping:
+                    raise ValueError(f"❌ Color inválido: {letra} en posición {index}")
+                face[i][j].colorletra_raw = estado_colores[index]
+                p = mapping[letra]
+                index += 1
+
+    return cubo
+                
+
+
+# --- VALIDAR ESTADO ---
+
+from collections import Counter
+
+def validar_estado(estado):
+    
+    if len(estado) != 54:
+        return False, f"❌ Longitud inválida: {len(estado)}"
+    if any(c not in 'wrbgyo' for c in estado):
+        return False, f"❌ El estado contiene colores no válidos: {set(estado) - set('wrbgyo')}"
+    conteo = Counter(estado)
+    for c in 'wrbgyo':
+        if conteo[c] != 9:
+            return False, f"❌ Color '{c}' aparece {conteo[c]} veces (se esperaban 9)"
+    return True, "✅ Estado válido"
+
+
 @main.route('/resolver-manzana', methods=['POST'])
 def resolver_manzana():
+    print("📍 Entrando en /resolver-manzana")
+
     if 'estado_manzana' not in session:
         flash("⚠️ No hay estado de manzana cargado.", "error")
         return redirect(url_for('main.rubik_home'))
 
     estado_manzana = session['estado_manzana']
-    secuencia_estado = generar_secuencia_estado(estado_manzana)["secuencia_estado"]
+    estado_colores = construir_estado_rubik_desde_manzana(estado_manzana)
+
+    print(f"🎯 estado_colores recibido: {estado_colores}")
+    print(f"🔬 tipo(estado_colores): {type(estado_colores)}")
+    print(f"🔬 contenido: {estado_colores[:10]}")
+
+    # Transformar lista a string si fuera necesario
+    if isinstance(estado_colores, list):
+        estado_colores = ''.join(map(str, estado_colores))
+        print(f"🔁 Convertido a string: {estado_colores}")
+
+    valido, mensaje = validar_estado(estado_colores)
+    if not valido:
+        flash(mensaje, "error")
+        return redirect(url_for('main.rubik_home'))
 
     try:
-        piezas = secuencia_estado.split("-")
-        color_map = {}
-        current_char = ord('A')
-        secuencia_colores = ""
+        cubo = construir_cubo_desde_estado(estado_colores)
 
-        for pieza in piezas:
-            pieza_id = pieza.split('_')[0]
-            if pieza_id not in color_map:
-                color_map[pieza_id] = chr(current_char)
-                current_char += 1
-            secuencia_colores += color_map[pieza_id]
+        print("🧪 Cubo construido con éxito. Representación:")
+        for face in 'URFDLB':
+            print(f"{face}:")
+            print(cubo[face])
 
-        print(f"✅ Secuencia colores ficticios: {secuencia_colores}")
+        try:
+            print("🧪 Probando movimientos básicos:")
+            try:
+               cubo('U')
+               cubo('R')
+               cubo("F'")
+               print("✅ Movimientos aplicados correctamente.")
+            except Exception as e:
+               print(f"❌ Error al aplicar movimientos: {e}")
 
-        
+        except Exception as e:
+            print(f"❌ Error interno en CFOPSolver: {str(e)}")
+            raise
 
-        # Convertir la secuencia de colores a movimientos de Rubik
-        secuencia_movimientos = convertir_colores_a_movimientos(secuencia_colores)
+        solucion_str = " ".join(map(str, solucion))
+        print(f"✅ Solución encontrada: {solucion_str}")
 
-        # Inicializar el cubo y aplicar los movimientosd   
-
-        cubo = pc.Cube()
-        for movimiento in secuencia_movimientos:
-            cubo(movimiento)
-
-
-        solver = CFOPSolver(cubo)
-        solucion = solver.solve()
-        solucion_str = " ".join(str(m) for m in solucion)
-
-        return render_template("rubik.html", solucion=solucion_str,es_cubo=False)
+        return render_template(
+            "rubik.html",
+            solucion=solucion_str,
+            estado_colores=estado_colores,
+            es_cubo=False
+        )
 
     except Exception as e:
         flash(f"❌ Error al resolver: {str(e)}", "error")
-        return redirect(url_for('main.rubik_home'))     
+        return redirect(url_for('main.rubik_home'))
+   
 
-
-# 4. FUNCION PARA CONVERTIR A ESTADO RUBIK
-
-def convertir_a_estado_rubik(estado_manzana):
-    pieza_color_map = {}
-    colores = ['U', 'R', 'F', 'D', 'L', 'B']
-    index = 0
-
-    for cara in estado_manzana:
-        for fila in estado_manzana[cara]:
-            for pieza in fila:
-                pieza_id = pieza.split('_')[0] if '_' in pieza else pieza
-                if pieza_id not in pieza_color_map:
-                    pieza_color_map[pieza_id] = colores[index % 6]
-                    index += 1
-
-    orden_caras = ['UP', 'RIGHT', 'FRONT', 'DOWN', 'LEFT', 'BACK']
-    estado = ''
-
-    for cara in orden_caras:
-        for fila in estado_manzana.get(cara, []):
-            for pieza in fila:
-                pieza_id = pieza.split('_')[0] if '_' in pieza else pieza
-                estado += pieza_color_map.get(pieza_id, 'U')
-
-    return estado
-
+##############################################################
 
 
 @main.route("/ver-documento")

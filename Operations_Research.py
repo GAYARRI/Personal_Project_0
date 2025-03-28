@@ -1,3 +1,7 @@
+import os
+import certifi
+os.environ["SSL_CERT_FILE"] = certifi.where()
+
 import streamlit as st
 import os
 import json
